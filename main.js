@@ -4,7 +4,7 @@ let BestDealHelper = {
 
     init: function () {
         this.isLoaded = true;
-        this.cps = 0;
+        this.last_cps = 0;
         MOD = this;
         setTimeout(MOD.delayedInit, 500);
     },
@@ -18,8 +18,11 @@ let BestDealHelper = {
     },
 
     logicLoop: function () {
-        if (MOD.cps !== Game.unbuffedCps) {
-            MOD.cps = Game.unbuffedCps;
+        if (MOD.last_cps !== Game.cookiesPs) {
+            MOD.last_cps = Game.cookiesPs;
+            MOD.sortObjects();
+            Game.Notify(`Your buildings is sorted!`, ``, [16, 5], 1.5, 1);
+        } else if (! document.querySelector('#productPrice1').textContent.includes("💹")) {
             MOD.sortObjects();
         }
     },
@@ -63,7 +66,6 @@ let BestDealHelper = {
             let me = ObjectArr[i];
             me.l.children[2].children[3].textContent = Beautify(Math.round(me.bulkPrice)) + " (💹" + Beautify(me.cpsPerCookieDelta * 100, 1) + "%)";
         }
-        Game.Notify(`Your buildings is sorted!`, ``, [16, 5], 2, 1);
     },
 };
 
