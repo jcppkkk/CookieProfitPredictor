@@ -3,7 +3,7 @@
 	"ID": "Best Deal Helper",
 	"Author": "Jethro Yu",
 	"Description": "Help you choose best deal!",
-	"ModVersion": 2042.3,
+	"ModVersion": 2042.4,
 	"GameVersion": 2.042,
 	"Date": "13/09/2021",
 	"Dependencies": ["CCSE"],

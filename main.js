@@ -1,4 +1,5 @@
 // noinspection JSUnusedGlobalSymbols
+
 let BestDealHelper = {
     name: "BestDealHelper",
 
@@ -49,7 +50,7 @@ let BestDealHelper = {
         if (
             MOD.last_cps !== Game.unbuffedCps
             || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
-            || !document.querySelector('#productPrice1').textContent.includes("💹")
+            || !document.querySelector('#normalizedCpspb0')
         ) {
             MOD.sortBuildings();
             MOD.last_config_sortbuildings = MOD.config.sortbuildings;
@@ -77,6 +78,10 @@ let BestDealHelper = {
         return me.storedCps * Game.globalCpsMult + synergyBoost / Math.max(me.amount, 1);
     },
 
+    insertAfter: function (newNode, referenceNode) {
+        referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+    },
+
     sortBuildings: function () {
         let buildings = [...Game.ObjectsById]
         buildings.forEach(e => e.cpsPerCookie = MOD.boosted(e) / e.price)
@@ -102,7 +107,13 @@ let BestDealHelper = {
         buildings.forEach(e => e.cpsPerCookieDelta = e.cpsPerCookie / avg)
         for (const i in buildings) {
             let me = buildings[i];
-            me.l.children[2].children[3].textContent = Beautify(Math.round(me.bulkPrice)) + " (💹" + Beautify(me.cpsPerCookieDelta * 100, 1) + "%)";
+            let cpspb = document.querySelector("#normalizedCpspb" + me.id)
+            if (!cpspb) {
+                cpspb = document.createElement("span");
+                cpspb.setAttribute("id", "normalizedCpspb" + me.id);
+                MOD.insertAfter(cpspb, l('productPrice' + me.id))
+            }
+            cpspb.textContent = "(💹" + Beautify(me.cpsPerCookieDelta * 100, 1) + "%)"
         }
     },
 

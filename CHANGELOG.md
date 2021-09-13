@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2042.4] - 2021-09-13
+### Fixed
+- Normalized notation cause price flickering
+
 ## [2042.3] - 2021-09-13
 ### Added
 - Button to toggle sorting buildings.
