@@ -1,3 +1,6 @@
-## [2042.4] - 2021-09-13
-### Fixed
-- Normalized notation cause price flickering
+## [2042.5] - 2021-09-15
+### Added
+- Colors!
+
+### Changed
+- Efficiency: Sort buildings only if the order has changed
