@@ -21,5 +21,7 @@ jobs:
       - run: zip -r BestDealHelper-${RELEASE_VERSION}.zip BestDealHelper-${RELEASE_VERSION}
       - uses: ncipollo/release-action@v1
         with:
+          name: Release ${{ env.RELEASE_VERSION }}
+          bodyFile: "RELEASE.md"
           artifacts: BestDealHelper-${{ env.RELEASE_VERSION }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
