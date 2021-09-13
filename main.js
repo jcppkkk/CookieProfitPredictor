@@ -2,28 +2,58 @@
 let BestDealHelper = {
     name: "BestDealHelper",
 
-    init: function () {
-        this.isLoaded = true;
-        this.last_cps = 0;
-        MOD = this;
-        setTimeout(MOD.delayedInit, 500);
+    config: {
+        sortbuildings: 1
     },
 
-    delayedInit: function () {
-        setInterval(MOD.logicLoop, 200);
+    isLoaded: false,
+
+    init: function () {
+        MOD = this;
+        Game.customOptionsMenu.push(MOD.addOptionsMenu);
+        MOD.last_cps = 0;
+        MOD.last_buildings = [...Game.ObjectsById].map(e => e.id);
+        MOD.last_config_sortbuildings = MOD.config.sortbuildings;
+
+        setTimeout(function () {
+            setInterval(MOD.logicLoop, 200);
+        }, 500);
+
+        MOD.isLoaded = true;
+    },
+
+    load: function (str) {
+        const config = JSON.parse(str);
+        for (const c in config) MOD.config[c] = config[c];
+        MOD.sortBuildings();
+    },
+
+    save: function () {
+        return JSON.stringify(MOD.config);
     },
 
     register: function () {
         Game.registerMod(this.name, this);
     },
 
+    addOptionsMenu: function () {
+        const body = `
+        <div class="listing">
+            ${MOD.button('sortbuildings', 'Sort Buildings ON (default)', 'Sort Buildings OFF')}
+        </div>`;
+
+        CCSE.AppendCollapsibleOptionsMenu(MOD.name, body)
+    },
+
     logicLoop: function () {
-        if (MOD.last_cps !== Game.cookiesPs) {
-            MOD.last_cps = Game.cookiesPs;
-            MOD.sortObjects();
-            Game.Notify(`Your buildings is sorted!`, ``, [16, 5], 1.5, 1);
-        } else if (! document.querySelector('#productPrice1').textContent.includes("💹")) {
-            MOD.sortObjects();
+        if (
+            MOD.last_cps !== Game.unbuffedCps
+            || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
+            || !document.querySelector('#productPrice1').textContent.includes("💹")
+        ) {
+            MOD.sortBuildings();
+            MOD.last_config_sortbuildings = MOD.config.sortbuildings;
+            MOD.last_cps = Game.unbuffedCps;
         }
     },
     boosted: function (me) {
@@ -46,30 +76,64 @@ let BestDealHelper = {
         }
         return me.storedCps * Game.globalCpsMult + synergyBoost / Math.max(me.amount, 1);
     },
-    sortObjects: function () {
-        ObjectArr = [...Game.ObjectsById]
-        ObjectArr.forEach(e => e.cpsPerCookie = MOD.boosted(e) / e.price)
-        ObjectArr.sort(function (a, b) {
-            if (a.locked) return 1;
-            return (a.cpsPerCookie === b.cpsPerCookie) ? 0 : (a.cpsPerCookie < b.cpsPerCookie ? 1 : -1);
-        });
-        let store = document.querySelector('#products')
-        for (let i = 0; i < ObjectArr.length; ++i) {
-            store.appendChild(ObjectArr[i].l);
+
+    sortBuildings: function () {
+        let buildings = [...Game.ObjectsById]
+        buildings.forEach(e => e.cpsPerCookie = MOD.boosted(e) / e.price)
+
+        if (MOD.config.sortbuildings) {
+            buildings.sort(function (a, b) {
+                if (a.locked) return 1;
+                return (a.cpsPerCookie === b.cpsPerCookie) ? 0 : (a.cpsPerCookie < b.cpsPerCookie ? 1 : -1);
+            });
+
+        }
+        if (MOD.config.sortbuildings || MOD.last_config_sortbuildings) {
+            // also apply on toggle off
+            let store = document.querySelector('#products')
+            for (let i = 0; i < buildings.length; ++i) {
+                store.appendChild(buildings[i].l);
+            }
         }
 
         // Normalization by Mean
-        ObjectArr = ObjectArr.filter(o => o.locked === 0)
-        const avg = ObjectArr.map(e => e.cpsPerCookie).reduce((a, b) => a + b, 0) / ObjectArr.length;
-        ObjectArr.forEach(e => e.cpsPerCookieDelta = e.cpsPerCookie / avg)
-        for (const i in ObjectArr) {
-            let me = ObjectArr[i];
+        buildings = buildings.filter(o => o.locked === 0)
+        const avg = buildings.map(e => e.cpsPerCookie).reduce((a, b) => a + b, 0) / buildings.length;
+        buildings.forEach(e => e.cpsPerCookieDelta = e.cpsPerCookie / avg)
+        for (const i in buildings) {
+            let me = buildings[i];
             me.l.children[2].children[3].textContent = Beautify(Math.round(me.bulkPrice)) + " (💹" + Beautify(me.cpsPerCookieDelta * 100, 1) + "%)";
         }
     },
+
+    button: function (config, texton, textoff) {
+        const name = `BestDealHelper${config}button`;
+        const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${texton}', '${textoff}');`
+        const value = MOD.config[config];
+        return `<a class="${value ? 'option' : 'option off'}" id="${name}" ${Game.clickStr}="${callback}">${value ? texton : textoff}</a>`
+    },
+
+    buttonCallback: function (config, button, texton, textoff) {
+        const value = !MOD.config[config];
+        MOD.config[config] = value;
+        l(button).innerHTML = value ? texton : textoff
+        l(button).className = value ? 'option' : 'option off'
+        PlaySound('snd/tick.mp3');
+    },
 };
 
+// Bind methods
+for (func of Object.getOwnPropertyNames(BestDealHelper).filter(m => typeof BestDealHelper[m] === 'function')) {
+    BestDealHelper[func] = BestDealHelper[func].bind(BestDealHelper);
+}
 
+// Load mod
 if (!BestDealHelper.isLoaded) {
-    BestDealHelper.register();
+    if (CCSE && CCSE.isLoaded) {
+        BestDealHelper.register();
+    } else {
+        if (!CCSE) var CCSE = {};
+        if (!CCSE.postLoadHooks) CCSE.postLoadHooks = [];
+        CCSE.postLoadHooks.push(BestDealHelper.register);
+    }
 }

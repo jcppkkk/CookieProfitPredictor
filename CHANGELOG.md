@@ -6,9 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2042.3] - 2021-09-13
+### Changed
+- Require CCSE now.
+
+### Added
+- Buttom to toggle sorting buildings.
+
 ## [2042.2] - 2021-09-12
 ### Fixed
-- Normalized notation does not show after enter/leave Frenzy. 
+- Normalized notation does not show after enter/leave Frenzy.
 
 ## [2042.1] - 2021-09-11
 ### Added
