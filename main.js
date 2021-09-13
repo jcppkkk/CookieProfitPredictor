@@ -4,7 +4,7 @@ let BestDealHelper = {
     name: "BestDealHelper",
 
     config: {
-        sortbuildings: 1
+        sortbuildings: 0
     },
 
     isLoaded: false,
@@ -13,9 +13,8 @@ let BestDealHelper = {
         MOD = this;
         Game.customOptionsMenu.push(MOD.addOptionsMenu);
         MOD.last_cps = 0;
-        MOD.last_buildings = [...Game.ObjectsById].map(e => e.id);
+        MOD.last_buildings_order = [...Game.ObjectsById].map(e => e.id);
         MOD.last_config_sortbuildings = MOD.config.sortbuildings;
-
         setTimeout(function () {
             setInterval(MOD.logicLoop, 200);
         }, 500);
@@ -86,19 +85,23 @@ let BestDealHelper = {
         let buildings = [...Game.ObjectsById]
         buildings.forEach(e => e.cpsPerCookie = MOD.boosted(e) / e.price)
 
+        // Sort buildings or leave them to default
         if (MOD.config.sortbuildings) {
             buildings.sort(function (a, b) {
                 if (a.locked) return 1;
                 return (a.cpsPerCookie === b.cpsPerCookie) ? 0 : (a.cpsPerCookie < b.cpsPerCookie ? 1 : -1);
             });
-
         }
-        if (MOD.config.sortbuildings || MOD.last_config_sortbuildings) {
-            // also apply on toggle off
+
+        // Sort buildings only if the order has changed
+        let buildings_order = buildings.map(e => e.id)
+        if (!buildings_order.every((value, index) => value === MOD.last_buildings_order[index])) {
             let store = document.querySelector('#products')
             for (let i = 0; i < buildings.length; ++i) {
                 store.appendChild(buildings[i].l);
             }
+            MOD.last_buildings_order = buildings_order
+            // Game.Notify(`Buildings are sorted!`, ``, [16, 5], 1.5, 1);
         }
 
         // Normalization by Mean
