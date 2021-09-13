@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [2042.3] - 2021-09-13
+### Added
+- Button to toggle sorting buildings.
+
 ### Changed
 - Require CCSE now.
-
-### Added
-- Buttom to toggle sorting buildings.
 
 ## [2042.2] - 2021-09-12
 ### Fixed
