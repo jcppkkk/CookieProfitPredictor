@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2042.6] - 2021-09-15
+### Fixed
+- Loading error about CCSE init
+
 ## [2042.5] - 2021-09-15
 ### Added
 - Colors!

@@ -131,9 +131,7 @@ let BestDealHelper = {
 
         const half = Math.floor(values.length / 2);
 
-        if (values.length % 2) {
-            return values[half];
-        }
+        if (values.length % 2) return values[half];
 
         return (values[half - 1] + values[half]) / 2.0;
     },
@@ -218,8 +216,8 @@ if (!BestDealHelper.isLoaded) {
     if (CCSE && CCSE.isLoaded) {
         BestDealHelper.register();
     } else {
-        if (!CCSE) { // noinspection JSUnusedLocalSymbols
-            let CCSE = {};
+        if (!CCSE) { // noinspection ES6ConvertVarToLetConst
+            var CCSE = {}; // use var here, or it may cause loading error
         }
         if (!CCSE.postLoadHooks) CCSE.postLoadHooks = [];
         CCSE.postLoadHooks.push(BestDealHelper.register);
