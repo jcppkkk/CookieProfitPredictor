@@ -22,6 +22,7 @@
  * @typedef {Object} Game
  * @property {function} registerMod
  * @property {function} Has
+ * @property {function} CalculateGains
  * @property {Object[]} GrandmaSynergies
  * @property {Object} GrandmaSynergies.buildingTie
  * @property {number} GrandmaSynergies.buildingTie.storedTotalCps
@@ -33,6 +34,8 @@
  * @property {number} unbuffedCps
  * @property {number} globalCpsMult
  * @property {number} storedCps
+ * @property {number} cookies
+ * @property {number} cookiesPs
  */
 /**
  * @typedef {Object} App
@@ -53,6 +56,7 @@ let BestDealHelper = {
 
     isLoaded: false,
     load_chroma: false,
+    loopCount: 0,
 
     register: function () {
         Game.registerMod(this.name, this);
@@ -74,7 +78,7 @@ let BestDealHelper = {
     "load": function (str) {
         const config = JSON.parse(str);
         for (const c in config) MOD.config[c] = config[c];
-        MOD.sortBuildings();
+        MOD.sortDeals();
     },
 
     "save": function () {
@@ -92,35 +96,18 @@ let BestDealHelper = {
     },
 
     logicLoop: function () {
+        MOD.loopCount++;
         if (
-            MOD.last_cps !== Game.unbuffedCps
+            MOD.loopCount >= 10
+            || MOD.last_cps !== Game.cookiesPs
             || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
             || !document.querySelector("#normalizedCpspb0")
         ) {
-            MOD.sortBuildings();
+            MOD.sortDeals();
+            MOD.loopCount = 0;
             MOD.last_config_sortbuildings = MOD.config.sortbuildings;
-            MOD.last_cps = Game.unbuffedCps;
+            MOD.last_cps = Game.cookiesPs;
         }
-    },
-    boosted: function (me) {
-        let boost;
-        let other;
-        let synergyBoost = 0;
-        if (me.name === "Grandma") {
-            for (const i in Game.GrandmaSynergies) {
-                if (Game.Has(Game.GrandmaSynergies[i])) {
-                    other = Game.Upgrades[Game.GrandmaSynergies[i]].buildingTie;
-                    const mult = me.amount * 0.01 * (1 / (other.id - 1));
-                    boost = (other.storedTotalCps * Game.globalCpsMult) - (other.storedTotalCps * Game.globalCpsMult) / (1 + mult);
-                    synergyBoost += boost;
-                }
-            }
-        } else if (me.name === "Portal" && Game.Has("Elder Pact")) {
-            other = Game.Objects["Grandma"];
-            boost = (me.amount * 0.05 * other.amount) * Game.globalCpsMult;
-            synergyBoost += boost;
-        }
-        return me.storedCps * Game.globalCpsMult + synergyBoost / Math.max(me.amount, 1);
     },
     median: function (values) {
         if (values.length === 0) return 0;
@@ -139,15 +126,34 @@ let BestDealHelper = {
         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
     },
 
-    sortBuildings: function () {
-        let buildings = [...Game.ObjectsById];
-        buildings.forEach(e => e.cpsPerCookie = MOD.boosted(e) / e.price);
+    sortDeals: function () {
+        let enabledBuildings = Game.ObjectsById.map(e => +!e.locked).reduce((a, b) => a + b) + 2;
+        let buildings = [...Game.ObjectsById].filter(o => o.id < enabledBuildings);
+
+        buildings.forEach(function (me) {
+            Game.timedout = true;
+            me.amount++;
+            Game.CalculateGains();
+            let newCookiesPs = Game.cookiesPs;
+            me.amount--;
+            Game.CalculateGains();
+            Game.timedout = false;
+
+            let deltaTime;
+            if (me.price > Game.cookies) {
+                deltaTime = (me.price - Game.cookies) / Game.cookiesPs + Game.cookies / newCookiesPs;
+            } else {
+                deltaTime = me.price / newCookiesPs;
+            }
+
+            let deltaCps = newCookiesPs - Game.cookiesPs;
+            return me.cpsAcceleration = deltaCps / deltaTime;
+        });
 
         // Sort buildings or leave them to default
         if (MOD.config.sortbuildings) {
             buildings.sort(function (a, b) {
-                if (a.locked) return 1;
-                return (a.cpsPerCookie === b.cpsPerCookie) ? 0 : (a.cpsPerCookie < b.cpsPerCookie ? 1 : -1);
+                return (a.cpsAcceleration === b.cpsAcceleration) ? 0 : (a.cpsAcceleration < b.cpsAcceleration ? 1 : -1);
             });
         }
 
@@ -163,13 +169,12 @@ let BestDealHelper = {
         }
 
         // Normalization by Mean
-        buildings = buildings.filter(o => o.locked === 0);
-        const cpsPerCookieArr = buildings.map(e => e.cpsPerCookie);
-        const avg = cpsPerCookieArr.reduce((a, b) => a + b, 0) / buildings.length;
+        const cpsAccelerationArr = buildings.map(e => e.cpsAcceleration);
+        const avg = cpsAccelerationArr.reduce((a, b) => a + b, 0) / buildings.length;
         let color = (
             chroma.scale(["red", "yellow", "lightgreen"])
                 .mode("lrgb")
-                .domain([Math.min(...cpsPerCookieArr), MOD.median(cpsPerCookieArr), Math.max(...cpsPerCookieArr)])
+                .domain([Math.min(...cpsAccelerationArr), MOD.median(cpsAccelerationArr), Math.max(...cpsAccelerationArr)])
         );
 
         for (const i in buildings) {
@@ -181,8 +186,8 @@ let BestDealHelper = {
                 cpspb.style.fontWeight = "bolder";
                 MOD.insertAfter(cpspb, l("productPrice" + me.id));
             }
-            cpspb.textContent = "(💹" + Beautify(me.cpsPerCookie * 100 / avg, 1) + "%)";
-            cpspb.style.color = color(me.cpsPerCookie);
+            cpspb.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
+            cpspb.style.color = color(me.cpsAcceleration);
 
         }
     },
