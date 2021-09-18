@@ -1,7 +1,6 @@
-## [2042.7] - 2021-09-18
-### Added
-- Include upgrades now!
+## [2042.8] - 2021-09-18
+### Fixed
+- Fix "raw cookies per second" get changed incorrectly. However, this Mod cannot detect whether your stat is correct or incorrectly; Please export your save, visit https://coderpatsy.bitbucket.io/cookies/editor.html, change `Highest raw CpS` to 0 and import modified save back to fix the value.
 
 ### Changed
-- Improve: change The metric of deal quality from `Price–PerBuildingCPS ratio` to `cpsAcceleration ratio`, in order to gain most cps in the shortest time.
-- Improve: hue for notations.
+- Grandmapocalypse related upgrades are set to 0%, including "One mind", "Communal brainsweep", "Elder pact". 
