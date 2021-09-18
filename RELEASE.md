@@ -1,6 +1,10 @@
-## [2042.8] - 2021-09-18
-### Fixed
-- Fix "raw cookies per second" get changed incorrect. However, this Mod cannot detect whether your stat is correct or incorrectly; Please export your save, visit https://coderpatsy.bitbucket.io/cookies/editor.html, change `Highest raw CpS` to 0 and import modified save back to fix the value.
-
+## [2042.9] - 2021-09-18
 ### Changed
-- Grandmapocalypse related upgrades are set to 0%, including "One mind", "Communal brainsweep", "Elder pact". 
+- Suppress notation on 0% upgrades.
+- Avoid sorting upgrades in toggle pool. 
+
+### Fixed
+- Fix errors afters ascend.
+- Fix that best deals do not show in blue if multiple deals have same ratio.
+- Fix errors with Mile Selector.
+- Fix 0% rate updates are included in normalizing process.

@@ -5,9 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2042.9] - 2021-09-18
+### Changed
+- Suppress notation on 0% upgrades.
+- Avoid sorting upgrades in toggle pool. 
+
 ### Fixed
-- Errors afters ascend.
-- Best deals do not show in blue if multiple deals have same ratio.
+- Fix errors afters ascend.
+- Fix that best deals do not show in blue if multiple deals have same ratio.
+- Fix errors with Mile Selector.
+- Fix 0% rate updates are included in normalizing process.
 
 ## [2042.8] - 2021-09-18
 ### Fixed

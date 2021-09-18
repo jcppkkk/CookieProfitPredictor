@@ -42,6 +42,7 @@
  * @property {Array} customOptionsMenu
  * @property {Array} Upgrades
  * @property {string} clickStr
+ * @property {string} pool
  * @property {number} unbuffedCps
  * @property {number} globalCpsMult
  * @property {number} storedCps
@@ -119,7 +120,7 @@ let BestDealHelper = {
 
     logicLoop: function () {
         MOD.loopCount++;
-        if (MOD.loopCount >= 3
+        if (MOD.loopCount >= 10
             || MOD.last_cps !== Game.cookiesPs
             || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
             || !document.querySelector("#productAcc0")
@@ -137,7 +138,7 @@ let BestDealHelper = {
 
     getCpsAcceleration: function (me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
-        if (["Milk selector", "One mind", "Communal brainsweep", "Elder pact"].includes(me.name)) return 0;
+        if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)) return 0;
         if (Game.cookies === 0) return 0;
 
 
@@ -163,6 +164,7 @@ let BestDealHelper = {
         } else {
             deltaTime = me.price / me.newCookiesPs;
         }
+        if (deltaTime === 0) return 0; // "Milk selector"
 
         let deltaCps = me.newCookiesPs - Game.cookiesPs;
         return deltaCps / deltaTime;
@@ -239,8 +241,9 @@ let BestDealHelper = {
         let color = chroma.scale(palette).mode("lab").domain(domain);
 
         // Normalized Notation by Mean
-        const avg = all.map(e => e.cpsAcceleration).reduce((a, b) => a + b, 0) / all.length;
-        if (avg===0) return;
+        let allAcc = all.map(e => e.cpsAcceleration).filter(e => e !== 0);
+        if (allAcc.length === 0) return;
+        const avg = allAcc.reduce((a, b) => a + b, 0) / allAcc.length;
 
         // Notation for upgrades
         for (const i in upgrades) {
@@ -257,6 +260,10 @@ let BestDealHelper = {
                 span.style.textShadow = "0px 2px 6px #000, 0px 1px 1px #000";
                 span.style.transform = "scale(0.8,1)";
                 l("upgrade" + i).appendChild(span);
+            }
+            if (me.cpsAcceleration === 0) {
+                span.textContent = "";
+                continue;
             }
             span.textContent = Beautify(me.cpsAcceleration * 100 / avg, 1) + "%";
             if (me.isBestHelper) {
@@ -283,6 +290,10 @@ let BestDealHelper = {
                 span.style.display = "block";
                 MOD.insertAfter(span, l("productPrice" + me.id));
             }
+            if (me.cpsAcceleration === 0) {
+                span.textContent = "";
+                continue;
+            }
             span.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
             if (me.isBestHelper) {
                 let text = span.innerText;
@@ -307,6 +318,7 @@ let BestDealHelper = {
         if (!upgrades_order.every((value, index) => value === current_upgrades_order[index])) {
             let store = document.querySelector("#upgrades");
             for (let i = 0; i < upgrades.length; ++i) {
+                if(upgrades[i].pool === "toggle") continue;
                 store.appendChild(upgrades[i].l);
             }
         }
