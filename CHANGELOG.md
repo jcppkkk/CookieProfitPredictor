@@ -5,10 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Errors afters ascend.
+- Best deals do not show in blue if multiple deals have same ratio.
 
 ## [2042.8] - 2021-09-18
 ### Fixed
-- Fix "raw cookies per second" get changed incorrectly. However, this Mod cannot detect whether your stat is correct or incorrectly; Please export your save, visit https://coderpatsy.bitbucket.io/cookies/editor.html, change `Highest raw CpS` to 0 and import modified save back to fix the value.
+- Fix "raw cookies per second" get changed incorrect. However, this Mod cannot detect whether your stat is correct or incorrectly; Please export your save, visit https://coderpatsy.bitbucket.io/cookies/editor.html, change `Highest raw CpS` to 0 and import modified save back to fix the value.
 
 ### Changed
 - Grandmapocalypse related upgrades are set to 0%, including "One mind", "Communal brainsweep", "Elder pact". 

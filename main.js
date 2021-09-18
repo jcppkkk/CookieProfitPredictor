@@ -18,12 +18,14 @@
  * @property {DocumentFragment} l
  * @property {number} price
  * @property {number} timeToTargetCookie
+ * @property {number} newCookiesPs
  */
 /**
  * @typedef {Object} Upgrade
  * @property {function} getPrice
  * @property {number} bought
  * @property {number} timeToTargetCookie
+ * @property {number} newCookiesPs
  */
 /**
  * @typedef {Object} Game
@@ -63,7 +65,11 @@ let BestDealHelper = {
         sortbuildings: 0,
     },
 
-    isLoaded: false, load_chroma: false, loopCount: 0, register: function () {
+    isLoaded: false,
+    load_chroma: false,
+    loopCount: 0,
+
+    register: function () {
         Game.registerMod(this.name, this);
     },
 
@@ -72,6 +78,7 @@ let BestDealHelper = {
         [...document.getElementsByClassName("product")].forEach(e => e.style.lineHeight = "18px");
         [...document.getElementsByClassName("productName")].forEach(e => e.style.fontSize = "26px");
 
+        // noinspection JSUndeclaredVariable
         MOD = this;
         Game.customOptionsMenu.push(MOD.addOptionsMenu);
         MOD.last_cps = 0;
@@ -112,7 +119,11 @@ let BestDealHelper = {
 
     logicLoop: function () {
         MOD.loopCount++;
-        if (MOD.loopCount >= 5 || MOD.last_cps !== Game.cookiesPs || MOD.config.sortbuildings !== MOD.last_config_sortbuildings || !document.querySelector("#productAcc0") || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))) {
+        if (MOD.loopCount >= 3
+            || MOD.last_cps !== Game.cookiesPs
+            || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
+            || !document.querySelector("#productAcc0")
+            || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))) {
             MOD.sortDeals();
             MOD.loopCount = 0;
             MOD.last_config_sortbuildings = MOD.config.sortbuildings;
@@ -126,12 +137,13 @@ let BestDealHelper = {
 
     getCpsAcceleration: function (me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
-        if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)) return 0;
+        if (["Milk selector", "One mind", "Communal brainsweep", "Elder pact"].includes(me.name)) return 0;
+        if (Game.cookies === 0) return 0;
+
 
         // Backup
         Game.Logic_ = Game.Logic;
-        Game.Logic = function () {
-        };
+        Game.Logic = function () {};
         let oldCookiesPsRawHighest = Game.cookiesPsRawHighest;
 
         if (me.type === "upgrade") me.bought++; else me.amount++;
@@ -203,6 +215,7 @@ let BestDealHelper = {
         let rank = 0;
         let domain = [all[rank].cpsAcceleration];
         rank++;
+        while (rank < all.length && all[rank].cpsAcceleration === all[0].cpsAcceleration) rank++;
         if (rank < all.length) {
             palette.unshift("#00ff00");
             domain.unshift(all[rank].cpsAcceleration);
@@ -227,6 +240,7 @@ let BestDealHelper = {
 
         // Normalized Notation by Mean
         const avg = all.map(e => e.cpsAcceleration).reduce((a, b) => a + b, 0) / all.length;
+        if (avg===0) return;
 
         // Notation for upgrades
         for (const i in upgrades) {
@@ -255,7 +269,7 @@ let BestDealHelper = {
                     span.appendChild(charElem);
                 }
             } else {
-                span.style.color = color(me.cpsAcceleration);
+                try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
             }
         }
         // Notation for buildings
@@ -280,7 +294,7 @@ let BestDealHelper = {
                     span.appendChild(charElem);
                 }
             } else {
-                span.style.color = color(me.cpsAcceleration);
+                try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
             }
         }
 
