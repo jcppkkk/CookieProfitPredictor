@@ -5,10 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+
+## [2042.7] - 2021-09-18
+### Added
+- Include upgrades now!
+
 ### Changed
-- Improve: The metric of deal quality from `Price–PerBuildingCPS ratio` to `cpsAcceleration ratio`, in order to gain most cps in the shortest time. 
-### Fixed
-- The color range is mistakenly include hidden building, thus colors are not much varies as expect.
+- Improve: change The metric of deal quality from `Price–PerBuildingCPS ratio` to `cpsAcceleration ratio`, in order to gain most cps in the shortest time.
+- Improve: hue for notations.
 
 ## [2042.6] - 2021-09-15
 ### Fixed
@@ -19,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Colors!
 
 ### Changed
-- Efficiency: Sort buildings only if the order has changed
+- Improve efficiency of sorting buildings. Only sort them if the order has changed.
 
 ## [2042.4] - 2021-09-13
 ### Fixed
