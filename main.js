@@ -165,7 +165,7 @@ let BestDealHelper = {
             let deltaTime;
             if (me.type === "upgrade") me.price = me.getPrice();
             if (me.price > Game.cookies) {
-                deltaTime = (me.price - Game.cookies) / Game.cookiesPs + Game.cookies / newCookiesPs;
+                deltaTime = (me.price - Game.cookies) / Game.cookiesPs + me.price / newCookiesPs;
             } else {
                 deltaTime = me.price / newCookiesPs;
             }
