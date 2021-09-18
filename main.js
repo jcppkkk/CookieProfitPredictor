@@ -2,11 +2,6 @@
  * @typedef {function} LoadScript
  */
 /**
- * @typedef {Object} Building
- * @property {number} price
- * @property {DocumentFragment} l
- */
-/**
  * @function l
  * @param {string} id
  */
@@ -19,7 +14,18 @@
  * @function PlaySound
  */
 /**
+ * @typedef {Object} Building
+ * @property {number} price
+ * @property {DocumentFragment} l
+ */
+/**
+ * @typedef {Object} Upgrade
+ * @property {function} getPrice
+ * @property {number} bought
+ */
+/**
  * @typedef {Object} Game
+ * @property {function} Logic
  * @property {function} registerMod
  * @property {function} Has
  * @property {function} CalculateGains
@@ -28,6 +34,7 @@
  * @property {number} GrandmaSynergies.buildingTie.storedTotalCps
  * @property {Object.<string, Building>} Objects
  * @property {Building[]} ObjectsById
+ * @property {Upgrade[]} UpgradesInStore
  * @property {Array} customOptionsMenu
  * @property {Array} Upgrades
  * @property {string} clickStr
@@ -63,6 +70,10 @@ let BestDealHelper = {
     },
 
     "init": function () {
+        // change building layout
+        [...document.getElementsByClassName("product")].forEach(e => e.style.lineHeight = "18px");
+        [...document.getElementsByClassName("productName")].forEach(e => e.style.fontSize = "26px");
+
         MOD = this;
         Game.customOptionsMenu.push(MOD.addOptionsMenu);
         MOD.last_cps = 0;
@@ -71,6 +82,12 @@ let BestDealHelper = {
         setTimeout(function () {
             setInterval(MOD.logicLoop, 200);
         }, 500);
+
+        const GameRebuildUpgrades = Game.RebuildUpgrades;
+        Game.RebuildUpgrades = function () {
+            GameRebuildUpgrades();
+            MOD.logicLoop();
+        };
 
         MOD.isLoaded = true;
     },
@@ -98,10 +115,11 @@ let BestDealHelper = {
     logicLoop: function () {
         MOD.loopCount++;
         if (
-            MOD.loopCount >= 10
+            MOD.loopCount >= 5
             || MOD.last_cps !== Game.cookiesPs
             || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
-            || !document.querySelector("#normalizedCpspb0")
+            || !document.querySelector("#productAcc0")
+            || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))
         ) {
             MOD.sortDeals();
             MOD.loopCount = 0;
@@ -129,19 +147,25 @@ let BestDealHelper = {
     sortDeals: function () {
         let enabledBuildings = Game.ObjectsById.map(e => +!e.locked).reduce((a, b) => a + b) + 2;
         let buildings = [...Game.ObjectsById].filter(o => o.id < enabledBuildings);
+        let upgrades = [...Game.UpgradesInStore];
+        let all = [...buildings, ...upgrades];
 
-        buildings.forEach(function (me) {
-            Game.timedout = true;
-            me.amount++;
+        // Calculate cpsAcceleration
+        all.forEach(function (me) {
+            Game.Logic_ = Game.Logic;
+            Game.Logic = function () {
+            };
+            if (me.type === "upgrade") me.bought++; else me.amount++;
             Game.CalculateGains();
             let newCookiesPs = Game.cookiesPs;
-            me.amount--;
+            if (me.type === "upgrade") me.bought--; else me.amount--;
             Game.CalculateGains();
-            Game.timedout = false;
+            Game.Logic = Game.Logic_;
 
             let deltaTime;
+            if (me.type === "upgrade") me.price = me.getPrice();
             if (me.price > Game.cookies) {
-                deltaTime = (me.price - Game.cookies) / Game.cookiesPs + Game.cookies / newCookiesPs;
+                deltaTime = (me.price - Game.cookies) / Game.cookiesPs + me.price / newCookiesPs;
             } else {
                 deltaTime = me.price / newCookiesPs;
             }
@@ -150,14 +174,90 @@ let BestDealHelper = {
             return me.cpsAcceleration = deltaCps / deltaTime;
         });
 
-        // Sort buildings or leave them to default
-        if (MOD.config.sortbuildings) {
-            buildings.sort(function (a, b) {
-                return (a.cpsAcceleration === b.cpsAcceleration) ? 0 : (a.cpsAcceleration < b.cpsAcceleration ? 1 : -1);
-            });
+        // determine colors
+        all.sort((a, b) => a.cpsAcceleration - b.cpsAcceleration);
+        all.forEach((e, index) => e.accRank = index);
+        let palette = ["#00ffff"];
+        let rank = all.length - 1;
+        let domain = [all[rank].cpsAcceleration];
+        rank--;
+        if (rank >= 0) {
+            palette.unshift("#00ff00");
+            domain.unshift(all[rank].cpsAcceleration);
+        }
+        rank -= 6;
+        if (rank >= 0) {
+            palette.unshift("#ffd939");
+            domain.unshift(all[rank].cpsAcceleration);
+        }
+        rank -= 8;
+        if (rank >= 0) {
+            palette.unshift("#ff0000");
+            domain.unshift(all[rank].cpsAcceleration);
+        }
+        rank--;
+        if (rank >= 0) {
+            palette.unshift("#64007c");
+            domain.unshift(all[0].cpsAcceleration);
         }
 
-        // Sort buildings only if the order has changed
+        let color = chroma.scale(palette).mode("lab").domain(domain);
+
+        // Normalized Notation by Mean
+        const avg = all.map(e => e.cpsAcceleration).reduce((a, b) => a + b, 0) / all.length;
+
+        // Notation for upgrades
+        for (const i in upgrades) {
+            let me = upgrades[i];
+            me.l = document.querySelector("#upgrade" + i);
+            let span = document.querySelector("#upgradeAcc" + i);
+            if (!span) {
+                span = document.createElement("span");
+                span.id = "upgradeAcc" + i;
+                span.style.fontWeight = "bolder";
+                span.style.position = "absolute";
+                span.style.bottom = "0px";
+                span.style.left = "-2px";
+                span.style.textShadow = "0px 2px 6px #000, 0px 1px 1px #000";
+                span.style.transform = "scale(0.8,1)";
+                l("upgrade" + i).appendChild(span);
+            }
+            span.textContent = Beautify(me.cpsAcceleration * 100 / avg, 1) + "%";
+            span.style.color = color(me.cpsAcceleration);
+        }
+        // Sort upgrades (or leave them as default)
+        upgrades.sort((a, b) => b.cpsAcceleration - a.cpsAcceleration);
+        // Only sort when the order is different
+        let upgrades_order = upgrades.map(e => e.l.id);
+        let current_upgrades_order = [...document.querySelector("#upgrades").children].map(e => e.id);
+        if (!upgrades_order.every((value, index) => value === current_upgrades_order[index])) {
+            let store = document.querySelector("#upgrades");
+            for (let i = 0; i < upgrades.length; ++i) {
+                store.appendChild(upgrades[i].l);
+            }
+        }
+
+        // Notation for buildings
+        for (const i in buildings) {
+            let me = buildings[i];
+            let span = document.querySelector("#productAcc" + me.id);
+            if (!span) {
+                span = document.createElement("span");
+                span.id = "productAcc" + me.id;
+                span.style.fontWeight = "bolder";
+                span.style.display = "block";
+                MOD.insertAfter(span, l("productPrice" + me.id));
+            }
+            span.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
+            span.style.color = color(me.cpsAcceleration);
+
+        }
+
+        // Sort buildings (or leave them as default)
+        if (MOD.config.sortbuildings) {
+            buildings.sort((a, b) => b.cpsAcceleration - a.cpsAcceleration);
+        }
+        // Only sort when the order is different
         let buildings_order = buildings.map(e => e.id);
         if (!buildings_order.every((value, index) => value === MOD.last_buildings_order[index])) {
             let store = document.querySelector("#products");
@@ -165,30 +265,6 @@ let BestDealHelper = {
                 store.appendChild(buildings[i].l);
             }
             MOD.last_buildings_order = buildings_order;
-            // Game.Notify(`Buildings are sorted!`, ``, [16, 5], 1.5, 1);
-        }
-
-        // Normalization by Mean
-        const cpsAccelerationArr = buildings.map(e => e.cpsAcceleration);
-        const avg = cpsAccelerationArr.reduce((a, b) => a + b, 0) / buildings.length;
-        let color = (
-            chroma.scale(["red", "yellow", "lightgreen"])
-                .mode("lrgb")
-                .domain([Math.min(...cpsAccelerationArr), MOD.median(cpsAccelerationArr), Math.max(...cpsAccelerationArr)])
-        );
-
-        for (const i in buildings) {
-            let me = buildings[i];
-            let cpspb = document.querySelector("#normalizedCpspb" + me.id);
-            if (!cpspb) {
-                cpspb = document.createElement("span");
-                cpspb.setAttribute("id", "normalizedCpspb" + me.id);
-                cpspb.style.fontWeight = "bolder";
-                MOD.insertAfter(cpspb, l("productPrice" + me.id));
-            }
-            cpspb.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
-            cpspb.style.color = color(me.cpsAcceleration);
-
         }
     },
 
@@ -206,6 +282,8 @@ let BestDealHelper = {
         l(button).className = value ? "option" : "option off";
         PlaySound("snd/tick.mp3");
     },
+
+
 };
 
 // Bind methods
@@ -214,6 +292,7 @@ for (func of Object.getOwnPropertyNames(BestDealHelper).filter(m => typeof BestD
      * @typedef {string} func
      */
     BestDealHelper[func] = BestDealHelper[func].bind(BestDealHelper);
+
 }
 
 // Load mod
@@ -228,3 +307,4 @@ if (!BestDealHelper.isLoaded) {
         CCSE.postLoadHooks.push(BestDealHelper.register);
     }
 }
+
