@@ -194,7 +194,7 @@ let BestDealHelper = {
                 if (me.price > Game.cookies) {
                     me.timeToTargetCookie = (me.price - Game.cookies) / Game.cookiesPs + target.price / me.newCookiesPs;
                 } else {
-                    me.timeToTargetCookie = (target.price - (Game.cookies - me.price)) / me.newCookiesPs;
+                    me.timeToTargetCookie = (target.price + me.price - Game.cookies) / me.newCookiesPs;
                 }
             });
             helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
@@ -212,7 +212,7 @@ let BestDealHelper = {
         span.innerHTML = "";
         for (let i = 0; i < text.length; i++) {
             let charElem = document.createElement("span");
-            charElem.style.color = "hsl(" + (360 * i / text.length) + ",80%,50%)";
+            charElem.style.color = "hsl(" + (360 * i / text.length) + ",90%,80%)";
             charElem.innerHTML = text[i];
             span.appendChild(charElem);
         }
@@ -255,7 +255,7 @@ let BestDealHelper = {
         }
         rank++;
         if (rank < all.length) {
-            palette.unshift("#64007c");
+            palette.unshift("#d82aff");
             domain.unshift(all[all.length - 1].cpsAcceleration);
         }
 
@@ -266,10 +266,31 @@ let BestDealHelper = {
         if (allAcc.length === 0) return;
         const avg = allAcc.reduce((a, b) => a + b, 0) / allAcc.length;
 
+        // Calculate waiting times
+        all.forEach(function (me) {
+            me.waitingTime = "";
+            if (me.price < Game.cookies) return;
+
+            const seconds = (me.price - Game.cookies) / Game.cookiesPs;
+            let a = [
+                Math.floor(seconds / 60 / 60 / 24 / 365) + "y",
+                Math.floor(seconds / 60 / 60 / 24 % 365) + "d",
+                Math.floor(seconds / 60 / 60 % 24) + "h",
+                Math.floor(seconds / 60 % 60) + "m",
+                Math.floor(seconds % 60) + "s"];
+            while (a.length && ["0y", "0d", "0m", "0h"].includes(a[0])) a.shift();
+            if (Math.floor(seconds / 60 / 60 / 24 / 365) > 100) {
+                me.waitingTime = ">100y";
+            } else {
+                me.waitingTime = a.slice(0, 2);
+            }
+        });
+
         // Notation for upgrades
         for (const i in upgrades) {
             let me = upgrades[i];
             me.l = document.querySelector("#upgrade" + i);
+            // Node
             let span = document.querySelector("#upgradeAcc" + i);
             if (!span) {
                 span = document.createElement("span");
@@ -277,16 +298,19 @@ let BestDealHelper = {
                 span.style.fontWeight = "bolder";
                 span.style.position = "absolute";
                 span.style.bottom = "0px";
-                span.style.left = "-2px";
+                span.style.left = "-5px";
                 span.style.textShadow = "0px 2px 6px #000, 0px 1px 1px #000";
                 span.style.transform = "scale(0.8,1)";
                 l("upgrade" + i).appendChild(span);
             }
+
+            // Text
             if (me.cpsAcceleration === 0) {
                 span.textContent = "";
                 continue;
             }
             span.textContent = Beautify(me.cpsAcceleration * 100 / avg, 1) + "%";
+            if (me.waitingTime) span.innerHTML = me.waitingTime + "<br>" + span.textContent;
             if (me.isBestHelper) {
                 MOD.rainbow(span);
             } else {
@@ -296,6 +320,7 @@ let BestDealHelper = {
         // Notation for buildings
         for (const i in buildings) {
             let me = buildings[i];
+            // Node
             let span = document.querySelector("#productAcc" + me.id);
             if (!span) {
                 span = document.createElement("span");
@@ -304,11 +329,14 @@ let BestDealHelper = {
                 span.style.display = "block";
                 MOD.insertAfter(span, l("productPrice" + me.id));
             }
+
+            // Text
             if (me.cpsAcceleration === 0) {
                 span.textContent = "";
                 continue;
             }
             span.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
+            if (me.waitingTime) span.textContent += " ⏳" + me.waitingTime;
             if (me.isBestHelper) {
                 MOD.rainbow(span);
             } else {
