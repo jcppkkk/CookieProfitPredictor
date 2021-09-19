@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2042.10] - 2021-09-19
+### Fixed
+- Ignore toggle type upgrades
+
 ## [2042.9] - 2021-09-18
 ### Changed
 - Suppress notation on 0% upgrades.

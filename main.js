@@ -120,15 +120,15 @@ let BestDealHelper = {
 
     logicLoop: function () {
         MOD.loopCount++;
-        if (MOD.loopCount >= 10
+        if (MOD.loopCount >= 20
             || MOD.last_cps !== Game.cookiesPs
             || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
             || !document.querySelector("#productAcc0")
             || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))) {
             MOD.sortDeals();
-            MOD.loopCount = 0;
             MOD.last_config_sortbuildings = MOD.config.sortbuildings;
             MOD.last_cps = Game.cookiesPs;
+            MOD.loopCount = 0;
         }
     },
 
@@ -138,9 +138,11 @@ let BestDealHelper = {
 
     getCpsAcceleration: function (me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
-        if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)) return 0;
-        if (Game.cookies === 0) return 0;
-
+        if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)
+            || me.pool === "toggle"
+            || Game.cookies === 0) {
+            return 0;
+        }
 
         // Backup
         Game.Logic_ = Game.Logic;
@@ -318,7 +320,7 @@ let BestDealHelper = {
         if (!upgrades_order.every((value, index) => value === current_upgrades_order[index])) {
             let store = document.querySelector("#upgrades");
             for (let i = 0; i < upgrades.length; ++i) {
-                if(upgrades[i].pool === "toggle") continue;
+                if (upgrades[i].pool === "toggle") continue;
                 store.appendChild(upgrades[i].l);
             }
         }
