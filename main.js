@@ -207,6 +207,17 @@ let BestDealHelper = {
 
     },
 
+    rainbow: function (span) {
+        let text = span.innerText;
+        span.innerHTML = "";
+        for (let i = 0; i < text.length; i++) {
+            let charElem = document.createElement("span");
+            charElem.style.color = "hsl(" + (360 * i / text.length) + ",80%,50%)";
+            charElem.innerHTML = text[i];
+            span.appendChild(charElem);
+        }
+    },
+
     sortDeals: function () {
         let enabledBuildings = Game.ObjectsById.map(e => +!e.locked).reduce((a, b) => a + b) + 2;
         let buildings = [...Game.ObjectsById].filter(o => o.id < enabledBuildings);
@@ -277,14 +288,7 @@ let BestDealHelper = {
             }
             span.textContent = Beautify(me.cpsAcceleration * 100 / avg, 1) + "%";
             if (me.isBestHelper) {
-                let text = span.innerText;
-                span.innerHTML = "";
-                for (let i = 0; i < text.length; i++) {
-                    let charElem = document.createElement("span");
-                    charElem.style.color = "hsl(" + (360 * i / text.length) + ",80%,50%)";
-                    charElem.innerHTML = text[i];
-                    span.appendChild(charElem);
-                }
+                MOD.rainbow(span);
             } else {
                 try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
             }
@@ -306,14 +310,7 @@ let BestDealHelper = {
             }
             span.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
             if (me.isBestHelper) {
-                let text = span.innerText;
-                span.innerHTML = "";
-                for (let i = 0; i < text.length; i++) {
-                    let charElem = document.createElement("span");
-                    charElem.style.color = "hsl(" + (360 * i / text.length) + ",80%,50%)";
-                    charElem.innerHTML = text[i];
-                    span.appendChild(charElem);
-                }
+                MOD.rainbow(span);
             } else {
                 try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
             }
