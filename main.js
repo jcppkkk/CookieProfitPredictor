@@ -19,7 +19,8 @@
  * @property {number} price
  * @property {number} timeToTargetCookie
  * @property {number} newCookiesPs
- * @property {number} isBestHelper
+ * @property {number} BestHelper
+ * @property {number} cpsAcceleration
  */
 /**
  * @typedef {Object} Upgrade
@@ -27,7 +28,8 @@
  * @property {number} bought
  * @property {number} timeToTargetCookie
  * @property {number} newCookiesPs
- * @property {number} isBestHelper
+ * @property {number} BestHelper
+ * @property {number} cpsAcceleration
  */
 /**
  * @typedef {Object} Game
@@ -181,7 +183,7 @@ let BestDealHelper = {
      * @param {(Building|Upgrade)[]} all
      */
     findHelper: function (all) {
-        all.forEach(e => e.isBestHelper = 0);
+        all.forEach(e => e.BestHelper = 0);
 
         let i = 0;
         let target = all[0];
@@ -200,7 +202,7 @@ let BestDealHelper = {
             helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
             if (helpers[0].timeToTargetCookie >= target.timeToTargetCookie) return;
             i++;
-            helpers[0].isBestHelper = i;
+            helpers[0].BestHelper = i;
             target = helpers[0];
         }
 
@@ -229,7 +231,7 @@ let BestDealHelper = {
         // Sorting by cpsAcceleration
         all.sort((a, b) => b.cpsAcceleration - a.cpsAcceleration);
 
-        // If the best cpsAcceleration is not affordable, try to find a pre-deal help us to get the best deal quicker.
+        // If the best cpsAcceleration is not affordable, search pre-deals to help us get the best deal quicker.
         MOD.findHelper(all);
 
         // Determine colors
@@ -298,7 +300,7 @@ let BestDealHelper = {
                 span.style.fontWeight = "bolder";
                 span.style.position = "absolute";
                 span.style.bottom = "0px";
-                span.style.left = "-5px";
+                span.style.left = "-3px";
                 span.style.textShadow = "0px 2px 6px #000, 0px 1px 1px #000";
                 span.style.transform = "scale(0.8,1)";
                 l("upgrade" + i).appendChild(span);
@@ -311,7 +313,7 @@ let BestDealHelper = {
             }
             span.textContent = Beautify(me.cpsAcceleration * 100 / avg, 1) + "%";
             if (me.waitingTime) span.innerHTML = me.waitingTime + "<br>" + span.textContent;
-            if (me.isBestHelper) {
+            if (me.BestHelper) {
                 MOD.rainbow(span);
             } else {
                 try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
@@ -337,7 +339,7 @@ let BestDealHelper = {
             }
             span.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
             if (me.waitingTime) span.textContent += " ⏳" + me.waitingTime;
-            if (me.isBestHelper) {
+            if (me.BestHelper) {
                 MOD.rainbow(span);
             } else {
                 try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
@@ -348,15 +350,15 @@ let BestDealHelper = {
         // Sort upgrades & buildings (or leave them as default)
         if (MOD.config.sortbuildings) {
             upgrades.sort(function (a, b) {
-                if (b.isBestHelper !== a.isBestHelper) {
-                    return b.isBestHelper - a.isBestHelper;
+                if (b.BestHelper !== a.BestHelper) {
+                    return b.BestHelper - a.BestHelper;
                 } else {
                     return b.cpsAcceleration - a.cpsAcceleration;
                 }
             });
             buildings.sort(function (a, b) {
-                if (b.isBestHelper !== a.isBestHelper) {
-                    return b.isBestHelper - a.isBestHelper;
+                if (b.BestHelper !== a.BestHelper) {
+                    return b.BestHelper - a.BestHelper;
                 } else {
                     return b.cpsAcceleration - a.cpsAcceleration;
                 }
@@ -369,7 +371,7 @@ let BestDealHelper = {
         if (!upgrades_order.every((value, index) => value === current_upgrades_order[index])) {
             let store = document.querySelector("#upgrades");
             for (let i = 0; i < upgrades.length; ++i) {
-                if (upgrades[i].pool === "toggle") continue;
+                if (["toggle", "tech"].includes(upgrades[i].pool)) continue;
                 store.appendChild(upgrades[i].l);
             }
         }
