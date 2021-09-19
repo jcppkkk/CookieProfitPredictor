@@ -19,6 +19,7 @@
  * @property {number} price
  * @property {number} timeToTargetCookie
  * @property {number} newCookiesPs
+ * @property {number} isBestHelper
  */
 /**
  * @typedef {Object} Upgrade
@@ -26,6 +27,7 @@
  * @property {number} bought
  * @property {number} timeToTargetCookie
  * @property {number} newCookiesPs
+ * @property {number} isBestHelper
  */
 /**
  * @typedef {Object} Game
@@ -120,7 +122,7 @@ let BestDealHelper = {
 
     logicLoop: function () {
         MOD.loopCount++;
-        if (MOD.loopCount >= 20
+        if (MOD.loopCount >= 10
             || MOD.last_cps !== Game.cookiesPs
             || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
             || !document.querySelector("#productAcc0")
@@ -159,16 +161,19 @@ let BestDealHelper = {
         Game.cookiesPsRawHighest = oldCookiesPsRawHighest;
         Game.Logic = Game.Logic_;
 
+        let deltaCps = me.newCookiesPs - Game.cookiesPs;
+        if (deltaCps === 0) return 0;
+
         let deltaTime;
         if (me.type === "upgrade") me.price = me.getPrice();
         if (me.price > Game.cookies) {
-            deltaTime = (me.price - Game.cookies) / Game.cookiesPs + me.price / me.newCookiesPs;
+            deltaTime = me.price / deltaCps + (me.price - Game.cookies) / Game.cookiesPs;
         } else {
-            deltaTime = me.price / me.newCookiesPs;
+            deltaTime = me.price / deltaCps;
         }
         if (deltaTime === 0) return 0; // "Milk selector"
 
-        let deltaCps = me.newCookiesPs - Game.cookiesPs;
+
         return deltaCps / deltaTime;
     },
 
@@ -176,26 +181,29 @@ let BestDealHelper = {
      * @param {(Building|Upgrade)[]} all
      */
     findHelper: function (all) {
-        all.forEach(e => e.isBestHelper = false);
+        all.forEach(e => e.isBestHelper = 0);
 
-        const target = all[0];
-        if (target.price <= Game.cookies) return;
+        let i = 0;
+        let target = all[0];
+        while (target.price > Game.cookies) {
+            target.timeToTargetCookie = (target.price - Game.cookies) / Game.cookiesPs;
+            let helpers = all.filter(me => me !== target && me.price < target.price);
+            if (!helpers.length) return;
 
-        target.timeToTargetCookie = (target.price - Game.cookies) / Game.cookiesPs;
-        let helpers = all.filter(me => me !== target && me.price < target.price);
-        if (!helpers.length) return;
-
-        helpers.forEach(function (me) {
-            if (me.price > Game.cookies) {
-                me.timeToTargetCookie = (me.price - Game.cookies) / Game.cookiesPs + target.price / me.newCookiesPs;
-            } else {
-                me.timeToTargetCookie = (target.price - (Game.cookies - me.price)) / me.newCookiesPs;
-            }
-        });
-        helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
-        if (helpers[0].timeToTargetCookie < target.timeToTargetCookie) {
-            helpers[0].isBestHelper = true;
+            helpers.forEach(function (me) {
+                if (me.price > Game.cookies) {
+                    me.timeToTargetCookie = (me.price - Game.cookies) / Game.cookiesPs + target.price / me.newCookiesPs;
+                } else {
+                    me.timeToTargetCookie = (target.price - (Game.cookies - me.price)) / me.newCookiesPs;
+                }
+            });
+            helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
+            if (helpers[0].timeToTargetCookie >= target.timeToTargetCookie) return;
+            i++;
+            helpers[0].isBestHelper = i;
+            target = helpers[0];
         }
+
 
     },
 
@@ -312,11 +320,27 @@ let BestDealHelper = {
         }
 
 
-        // Sort upgrades (or leave them as default)
-        upgrades.sort((a, b) => b.cpsAcceleration - a.cpsAcceleration);
-        // Only sort when the order is different
+        // Sort upgrades & buildings (or leave them as default)
+        if (MOD.config.sortbuildings) {
+            upgrades.sort(function (a, b) {
+                if (b.isBestHelper !== a.isBestHelper) {
+                    return b.isBestHelper - a.isBestHelper;
+                } else {
+                    return b.cpsAcceleration - a.cpsAcceleration;
+                }
+            });
+            buildings.sort(function (a, b) {
+                if (b.isBestHelper !== a.isBestHelper) {
+                    return b.isBestHelper - a.isBestHelper;
+                } else {
+                    return b.cpsAcceleration - a.cpsAcceleration;
+                }
+            });
+        }
+
         let upgrades_order = upgrades.map(e => e.l.id);
         let current_upgrades_order = [...document.querySelector("#upgrades").children].map(e => e.id);
+        // Only sort when the order is different
         if (!upgrades_order.every((value, index) => value === current_upgrades_order[index])) {
             let store = document.querySelector("#upgrades");
             for (let i = 0; i < upgrades.length; ++i) {
@@ -324,12 +348,9 @@ let BestDealHelper = {
                 store.appendChild(upgrades[i].l);
             }
         }
-        // Sort buildings (or leave them as default)
-        if (MOD.config.sortbuildings) {
-            buildings.sort((a, b) => b.cpsAcceleration - a.cpsAcceleration);
-        }
-        // Only sort when the order is different
+
         let buildings_order = buildings.map(e => e.id);
+        // Only sort when the order is different
         if (!buildings_order.every((value, index) => value === MOD.last_buildings_order[index])) {
             let store = document.querySelector("#products");
             for (let i = 0; i < buildings.length; ++i) {
