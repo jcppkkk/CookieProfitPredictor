@@ -67,7 +67,7 @@ let BestDealHelper = {
     name: "BestDealHelper",
 
     config: {
-        sortbuildings: 0,
+        enableSort: 0,
     },
 
     isLoaded: false,
@@ -88,7 +88,7 @@ let BestDealHelper = {
         Game.customOptionsMenu.push(MOD.addOptionsMenu);
         MOD.last_cps = 0;
         MOD.last_buildings_order = [...Game.ObjectsById].map(e => e.id);
-        MOD.last_config_sortbuildings = MOD.config.sortbuildings;
+        MOD.last_config_enableSort = MOD.config.enableSort;
         setTimeout(function () {
             setInterval(MOD.logicLoop, 200);
         }, 500);
@@ -116,7 +116,7 @@ let BestDealHelper = {
     addOptionsMenu: function () {
         const body = `
         <div class="listing">
-            ${MOD.button("sortbuildings", "Sort Buildings ON (default)", "Sort Buildings OFF")}
+            ${MOD.button("enableSort", "Sort ON (default)", "Sort OFF")}
         </div>`;
 
         CCSE.AppendCollapsibleOptionsMenu(MOD.name, body);
@@ -126,11 +126,11 @@ let BestDealHelper = {
         MOD.loopCount++;
         if (MOD.loopCount >= 10
             || MOD.last_cps !== Game.cookiesPs
-            || MOD.config.sortbuildings !== MOD.last_config_sortbuildings
+            || MOD.config.enableSort !== MOD.last_config_enableSort
             || !document.querySelector("#productAcc0")
             || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))) {
             MOD.sortDeals();
-            MOD.last_config_sortbuildings = MOD.config.sortbuildings;
+            MOD.last_config_enableSort = MOD.config.enableSort;
             MOD.last_cps = Game.cookiesPs;
             MOD.loopCount = 0;
         }
@@ -357,7 +357,7 @@ let BestDealHelper = {
 
 
         // Sort upgrades & buildings (or leave them as default)
-        if (MOD.config.sortbuildings) {
+        if (MOD.config.enableSort) {
             upgrades.sort(function (a, b) {
                 if (b.BestHelper !== a.BestHelper) {
                     return b.BestHelper - a.BestHelper;
