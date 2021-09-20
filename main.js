@@ -169,9 +169,9 @@ let BestDealHelper = {
         let deltaTime;
         if (me.type === "upgrade") me.price = me.getPrice();
         if (me.price > Game.cookies) {
-            deltaTime = me.price / deltaCps + (me.price - Game.cookies) / Game.cookiesPs;
+            deltaTime = me.price / me.newCookiesPs + (me.price - Game.cookies) / Game.cookiesPs;
         } else {
-            deltaTime = me.price / deltaCps;
+            deltaTime = me.price / me.newCookiesPs;
         }
         if (deltaTime === 0) return 0; // "Milk selector"
 

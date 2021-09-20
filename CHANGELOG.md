@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 # Changed
 - Change: Ignore tech type upgrades
+- Change: Rollback the algorithm about deltaTime
 
 ## [2042.11] - 2021-09-19
 ### Added
