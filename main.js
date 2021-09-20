@@ -80,8 +80,8 @@ let BestDealHelper = {
 
     "init": function () {
         // change building layout
-        [...document.getElementsByClassName("product")].forEach(e => e.style.lineHeight = "18px");
-        [...document.getElementsByClassName("productName")].forEach(e => e.style.fontSize = "26px");
+        [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".product .content")[0].style.paddingTop = "0px";
+        [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".price::before")[0].style.top = "0px";
 
         // noinspection JSUndeclaredVariable
         MOD = this;

@@ -5,9 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-# Changed
-- Change: Ignore tech type upgrades
+### Added
+
+### Changed
 - Change: Rollback the algorithm about deltaTime
+- Improve: tweak layout of buildings
 
 ## [2042.11] - 2021-09-19
 ### Added
