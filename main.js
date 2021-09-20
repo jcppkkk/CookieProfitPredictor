@@ -25,6 +25,7 @@
 /**
  * @typedef {Object} Upgrade
  * @property {function} getPrice
+ * @property {function} isVaulted
  * @property {number} bought
  * @property {number} timeToTargetCookie
  * @property {number} newCookiesPs
@@ -144,6 +145,7 @@ let BestDealHelper = {
         // Treat Grandmapocalypse upgrade as 0% temporary
         if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)
             || me.pool === "toggle"
+            || (me.isVaulted && me.isVaulted())
             || Game.cookies === 0) {
             return 0;
         }
@@ -381,8 +383,8 @@ let BestDealHelper = {
             let buildUpgrades = document.querySelector("#upgrades");
             let techUpgrades = document.querySelector("#techUpgrades");
             upgrades.forEach(function (upgrade) {
-                if (upgrade.pool === "toggle") {
-                } else if (upgrade.pool === "tech") {
+                if (upgrade.pool === "toggle" || upgrade.isVaulted()) return;
+                if (upgrade.pool === "tech") {
                     techUpgrades.appendChild(upgrade.l);
                 } else {
                     buildUpgrades.appendChild(upgrade.l);

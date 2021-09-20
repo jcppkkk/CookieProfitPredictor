@@ -5,15 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2042.12] - 2021-09-21
 ### Added
 - Auto increase decimalPlaces for small number.
 
 ### Changed
-- Change: Rollback the algorithm about deltaTime.
+- Change: rollback the algorithm about deltaTime.
 - Improve: tweak layout of buildings.
 
 ### Fixed
-- Fix: sort tech upgrades in their own list. 
+- Fix: sort tech upgrades in their own list.
+- Fix: skip sorting vaulted upgrades.
 
 ## [2042.11] - 2021-09-19
 ### Added

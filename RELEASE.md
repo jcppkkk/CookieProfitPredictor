@@ -1,7 +1,11 @@
-## [2042.11] - 2021-09-19
+## [2042.12] - 2021-09-21
 ### Added
-- Add: Highlight pre-deal that can advance best-deal waiting time.
-- Add: Waiting time for deals. 
+- Auto increase decimalPlaces for small number.
 
 ### Changed
-- Change: calc deltaTime from price / deltaCps
+- Change: rollback the algorithm about deltaTime.
+- Improve: tweak layout of buildings.
+
+### Fixed
+- Fix: sort tech upgrades in their own list.
+- Fix: skip sorting vaulted upgrades.
