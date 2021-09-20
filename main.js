@@ -337,7 +337,16 @@ let BestDealHelper = {
                 span.textContent = "";
                 continue;
             }
-            span.textContent = " 💹" + Beautify(me.cpsAcceleration * 100 / avg, 2) + "%";
+            // Auto increase decimalPlaces for small number
+            let value;
+            for (let i = 0; i < 15; i++) {
+                value = Beautify(me.cpsAcceleration * 100 / avg, i);
+                if (value !== "0") {
+                    value = Beautify(me.cpsAcceleration * 100 / avg, i + 1);
+                    break;
+                }
+            }
+            span.textContent = " 💹" + value + "%";
             if (me.waitingTime) span.textContent += " ⏳" + me.waitingTime;
             if (me.BestHelper) {
                 MOD.rainbow(span);

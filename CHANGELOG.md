@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Auto increase decimalPlaces for small number.
 
 ### Changed
 - Change: Rollback the algorithm about deltaTime
