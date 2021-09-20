@@ -378,11 +378,16 @@ let BestDealHelper = {
         let current_upgrades_order = [...document.querySelector("#upgrades").children].map(e => e.id);
         // Only sort when the order is different
         if (!upgrades_order.every((value, index) => value === current_upgrades_order[index])) {
-            let store = document.querySelector("#upgrades");
-            for (let i = 0; i < upgrades.length; ++i) {
-                if (["toggle", "tech"].includes(upgrades[i].pool)) continue;
-                store.appendChild(upgrades[i].l);
-            }
+            let buildUpgrades = document.querySelector("#upgrades");
+            let techUpgrades = document.querySelector("#techUpgrades");
+            upgrades.forEach(function (upgrade) {
+                if (upgrade.pool === "toggle") {
+                } else if (upgrade.pool === "tech") {
+                    techUpgrades.appendChild(upgrade.l);
+                } else {
+                    buildUpgrades.appendChild(upgrade.l);
+                }
+            });
         }
 
         let buildings_order = buildings.map(e => e.id);

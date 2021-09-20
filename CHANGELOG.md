@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto increase decimalPlaces for small number.
 
 ### Changed
-- Change: Rollback the algorithm about deltaTime
-- Improve: tweak layout of buildings
+- Change: Rollback the algorithm about deltaTime.
+- Improve: tweak layout of buildings.
+
+### Fixed
+- Fix: sort tech upgrades in their own list. 
 
 ## [2042.11] - 2021-09-19
 ### Added
