@@ -42,6 +42,7 @@
  * @property {Object} GrandmaSynergies.buildingTie
  * @property {number} GrandmaSynergies.buildingTie.storedTotalCps
  * @property {Object.<string, Building>} Objects
+ * @property {Object} UpgradesById
  * @property {Building[]} ObjectsById
  * @property {Upgrade[]} UpgradesInStore
  * @property {Array} customOptionsMenu
@@ -80,60 +81,65 @@ let BestDealHelper = {
     },
 
     "init": function () {
-        // change building layout
+        // configs
+        BestDealHelper.last_cps = 0;
+        BestDealHelper.last_buildings_order = [...Game.ObjectsById].map(e => e.id);
+        BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
+
+        // iterable Updates
+        const buildMap = obj => Object.keys(obj).reduce((map, key) => map.set(key, obj[key]), new Map());
+        BestDealHelper.Upgrades = buildMap(Game.UpgradesById);
+
+        // UI: add menu
+        Game.customOptionsMenu.push(BestDealHelper.addOptionsMenu);
+        // UI: change building layout
         [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".product .content")[0].style.paddingTop = "0px";
         [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".price::before")[0].style.top = "0px";
 
-        // noinspection JSUndeclaredVariable
-        MOD = this;
-        Game.customOptionsMenu.push(MOD.addOptionsMenu);
-        MOD.last_cps = 0;
-        MOD.last_buildings_order = [...Game.ObjectsById].map(e => e.id);
-        MOD.last_config_enableSort = MOD.config.enableSort;
-        setTimeout(function () {
-            setInterval(MOD.logicLoop, 200);
-        }, 500);
-
+        // Trigger: wrap GameRebuildUpgrades
         const GameRebuildUpgrades = Game.RebuildUpgrades;
         Game.RebuildUpgrades = function () {
             GameRebuildUpgrades();
-            MOD.logicLoop();
+            BestDealHelper.logicLoop();
         };
-
-        MOD.isLoaded = true;
+        // Trigger: checks from time to time
+        setTimeout(function () {
+            setInterval(BestDealHelper.logicLoop, 200);
+        }, 500);
+        BestDealHelper.isLoaded = true;
     },
 
     "load": function (str) {
         const config = JSON.parse(str);
-        for (const c in config) MOD.config[c] = config[c];
-        MOD.sortDeals();
+        for (const c in config) BestDealHelper.config[c] = config[c];
+        BestDealHelper.sortDeals();
     },
 
     "save": function () {
-        return JSON.stringify(MOD.config);
+        return JSON.stringify(BestDealHelper.config);
     },
 
 
     addOptionsMenu: function () {
         const body = `
         <div class="listing">
-            ${MOD.button("enableSort", "Sort ON (default)", "Sort OFF")}
+            ${BestDealHelper.button("enableSort", "Sort ON (default)", "Sort OFF")}
         </div>`;
 
-        CCSE.AppendCollapsibleOptionsMenu(MOD.name, body);
+        CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
     },
 
     logicLoop: function () {
-        MOD.loopCount++;
-        if (MOD.loopCount >= 10
-            || MOD.last_cps !== Game.cookiesPs
-            || MOD.config.enableSort !== MOD.last_config_enableSort
+        BestDealHelper.loopCount++;
+        if (BestDealHelper.loopCount >= 10
+            || BestDealHelper.last_cps !== Game.cookiesPs
+            || BestDealHelper.config.enableSort !== BestDealHelper.last_config_enableSort
             || !document.querySelector("#productAcc0")
             || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))) {
-            MOD.sortDeals();
-            MOD.last_config_enableSort = MOD.config.enableSort;
-            MOD.last_cps = Game.cookiesPs;
-            MOD.loopCount = 0;
+            BestDealHelper.sortDeals();
+            BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
+            BestDealHelper.last_cps = Game.cookiesPs;
+            BestDealHelper.loopCount = 0;
         }
     },
 
@@ -229,12 +235,12 @@ let BestDealHelper = {
         let all = [...buildings, ...upgrades];
 
         // Calculate cpsAcceleration
-        all.forEach(me => me.cpsAcceleration = MOD.getCpsAcceleration(me));
+        all.forEach(me => me.cpsAcceleration = BestDealHelper.getCpsAcceleration(me));
         // Sorting by cpsAcceleration
         all.sort((a, b) => b.cpsAcceleration - a.cpsAcceleration);
 
         // If the best cpsAcceleration is not affordable, search pre-deals to help us get the best deal quicker.
-        MOD.findHelper(all);
+        BestDealHelper.findHelper(all);
 
         // Determine colors
         all.forEach((e, index) => e.accRank = index);
@@ -316,7 +322,7 @@ let BestDealHelper = {
             span.textContent = Beautify(me.cpsAcceleration * 100 / avg, 1) + "%";
             if (me.waitingTime) span.innerHTML = me.waitingTime + "<br>" + span.textContent;
             if (me.BestHelper) {
-                MOD.rainbow(span);
+                BestDealHelper.rainbow(span);
             } else {
                 try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
             }
@@ -331,7 +337,7 @@ let BestDealHelper = {
                 span.id = "productAcc" + me.id;
                 span.style.fontWeight = "bolder";
                 span.style.display = "block";
-                MOD.insertAfter(span, l("productPrice" + me.id));
+                BestDealHelper.insertAfter(span, l("productPrice" + me.id));
             }
 
             // Text
@@ -351,7 +357,7 @@ let BestDealHelper = {
             span.textContent = " 💹" + value + "%";
             if (me.waitingTime) span.textContent += " ⏳" + me.waitingTime;
             if (me.BestHelper) {
-                MOD.rainbow(span);
+                BestDealHelper.rainbow(span);
             } else {
                 try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
             }
@@ -359,7 +365,7 @@ let BestDealHelper = {
 
 
         // Sort upgrades & buildings (or leave them as default)
-        if (MOD.config.enableSort) {
+        if (BestDealHelper.config.enableSort) {
             upgrades.sort(function (a, b) {
                 if (b.BestHelper !== a.BestHelper) {
                     return b.BestHelper - a.BestHelper;
@@ -394,25 +400,25 @@ let BestDealHelper = {
 
         let buildings_order = buildings.map(e => e.id);
         // Only sort when the order is different
-        if (!buildings_order.every((value, index) => value === MOD.last_buildings_order[index])) {
+        if (!buildings_order.every((value, index) => value === BestDealHelper.last_buildings_order[index])) {
             let store = document.querySelector("#products");
             for (let i = 0; i < buildings.length; ++i) {
                 store.appendChild(buildings[i].l);
             }
-            MOD.last_buildings_order = buildings_order;
+            BestDealHelper.last_buildings_order = buildings_order;
         }
     },
 
     button: function (config, texton, textoff) {
         const name = `BestDealHelper${config}button`;
         const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${texton}', '${textoff}');`;
-        const value = MOD.config[config];
+        const value = BestDealHelper.config[config];
         return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? texton : textoff}</a>`;
     },
 
     "buttonCallback": function (config, button, texton, textoff) {
-        const value = !MOD.config[config];
-        MOD.config[config] = value;
+        const value = !BestDealHelper.config[config];
+        BestDealHelper.config[config] = value;
         l(button).innerHTML = value ? texton : textoff;
         l(button).className = value ? "option" : "option off";
         PlaySound("snd/tick.mp3");
