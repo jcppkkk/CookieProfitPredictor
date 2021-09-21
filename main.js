@@ -18,9 +18,12 @@
  * @property {DocumentFragment} l
  * @property {number} price
  * @property {number} timeToTargetCookie
- * @property {number} newCookiesPs
+ * @property {number} buy1Cps
  * @property {number} BestHelper
  * @property {number} cpsAcceleration
+ * @property {Upgrade[]} tieredUpgrades
+ * @property {number} tierPrice
+ * @property {number} tierCps
  */
 /**
  * @typedef {Object} Upgrade
@@ -28,9 +31,15 @@
  * @property {function} isVaulted
  * @property {number} bought
  * @property {number} timeToTargetCookie
- * @property {number} newCookiesPs
+ * @property {number} buy1Cps
  * @property {number} BestHelper
  * @property {number} cpsAcceleration
+ * @property {number} tier
+ * @property {number} tierPrice
+ * @property {number} tierCps
+ */
+/**
+ * @typedef {Object} Tier
  */
 /**
  * @typedef {Object} Game
@@ -38,11 +47,12 @@
  * @property {function} registerMod
  * @property {function} Has
  * @property {function} CalculateGains
- * @property {Object[]} GrandmaSynergies
+ * @property {String[]} GrandmaSynergies
  * @property {Object} GrandmaSynergies.buildingTie
  * @property {number} GrandmaSynergies.buildingTie.storedTotalCps
- * @property {Object.<string, Building>} Objects
- * @property {Object} UpgradesById
+ * @property {{string:Building}} Objects
+ * @property {{number:Upgrade}} UpgradesById
+ * @property {{string:Tier}} Tiers
  * @property {Building[]} ObjectsById
  * @property {Upgrade[]} UpgradesInStore
  * @property {Array} customOptionsMenu
@@ -147,7 +157,17 @@ let BestDealHelper = {
         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
     },
 
-    getCpsAcceleration: function (me) {
+    getCpsAcceleration: function (price, cps, newCps) {
+        const deltaCps = newCps - cps;
+        if (deltaCps === 0) return 0;
+
+        const deltaTime = Math.max(price - Game.cookies, 0) / cps + price / newCps;
+        if (deltaTime === 0) return 0; // "Milk selector"
+
+        return deltaCps / deltaTime;
+    },
+
+    findBestCpsAcceleration: function (me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
         if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)
             || me.pool === "toggle"
@@ -156,35 +176,76 @@ let BestDealHelper = {
             return 0;
         }
 
-        // Backup
+        let amount;
+        let nextTierUpgrade;
+        if (me.type === "upgrade") {
+            amount = 1;
+        } else {
+            // for buildings, find amount to unlock next tier
+            const lockedTiers = me.tieredUpgrades.filter(e => Game.Tiers[e.tier].unlock !== -1 && e.buildingTie.bought < Game.Tiers[e.tier].unlock);
+            if (lockedTiers.length) {
+                amount = Game.Tiers[lockedTiers[0].tier].unlock - me.bought;
+                nextTierUpgrade = lockedTiers[0];
+            } else {
+                amount = 1;
+            }
+        }
+        const oldCps = Game.cookiesPs;
+        let totalPrice = 0;
+        let buyOneAcc = 0;
+
+
+        // Backup before emulation
         Game.Logic_ = Game.Logic;
         Game.Logic = function () {};
-        let oldCookiesPsRawHighest = Game.cookiesPsRawHighest;
+        const oldCookiesPsRawHighest = Game.cookiesPsRawHighest;
+        const oldAmount = me.amount;
+        const oldBought = me.bought;
 
-        if (me.type === "upgrade") me.bought++; else me.amount++;
-        Game.CalculateGains();
-        me.newCookiesPs = Game.cookiesPs;
-        if (me.type === "upgrade") me.bought--; else me.amount--;
-        Game.CalculateGains();
+        for (let i = 0; i < amount; i++) {
+            totalPrice += me.getPrice();
+            me.amount++;
+            me.bought++;
+            if (i === 0) {
+                // record cps after buy 1
+                Game.CalculateGains();
+                me.buy1Cps = Game.cookiesPs;
+                buyOneAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, me.buy1Cps);
+            }
+        }
+        let buyTierAcc = 0;
+        me.tierPrice = 0;
+        me.tierCps = 0;
+        if (nextTierUpgrade) {
+            totalPrice += nextTierUpgrade.getPrice();
+            nextTierUpgrade.bought++;
+            Game.CalculateGains();
+            // foresee result of buying extra buildings after tier upgraded
+            let nextBuyTierAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, Game.cookiesPs);
+            while (nextBuyTierAcc >= buyTierAcc) {
+                buyTierAcc = nextBuyTierAcc;
+                me.tierPrice = totalPrice;
+                me.tierCps = Game.cookiesPs;
 
-        // Restore
+                // Estimate buying next one
+                totalPrice += me.getPrice();
+                me.amount++;
+                me.bought++;
+                Game.CalculateGains();
+                nextBuyTierAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, Game.cookiesPs);
+            }
+        }
+
+
+        // Restore after emulation
+        me.amount = oldAmount;
+        me.bought = oldBought;
+        if (nextTierUpgrade) nextTierUpgrade.bought--;
+        Game.CalculateGains();
         Game.cookiesPsRawHighest = oldCookiesPsRawHighest;
         Game.Logic = Game.Logic_;
 
-        let deltaCps = me.newCookiesPs - Game.cookiesPs;
-        if (deltaCps === 0) return 0;
-
-        let deltaTime;
-        if (me.type === "upgrade") me.price = me.getPrice();
-        if (me.price > Game.cookies) {
-            deltaTime = me.price / me.newCookiesPs + (me.price - Game.cookies) / Game.cookiesPs;
-        } else {
-            deltaTime = me.price / me.newCookiesPs;
-        }
-        if (deltaTime === 0) return 0; // "Milk selector"
-
-
-        return deltaCps / deltaTime;
+        return Math.max(buyOneAcc, buyTierAcc);
     },
 
     /**
@@ -195,16 +256,29 @@ let BestDealHelper = {
 
         let i = 0;
         let target = all[0];
+
+        function getTimeToTarget(helperPrice, helperCps, targetPrice, cookies) {
+            let time = 0;
+            if (cookies >= helperPrice) {
+                cookies -= helperPrice;
+            } else {
+                time += (helperPrice - cookies) / Game.cookiesPs;
+                cookies = 0;
+            }
+            time += (targetPrice - cookies) / helperCps;
+            return time;
+        }
+
         while (target.price > Game.cookies) {
             target.timeToTargetCookie = (target.price - Game.cookies) / Game.cookiesPs;
             let helpers = all.filter(me => me !== target && me.price < target.price);
             if (!helpers.length) return;
 
             helpers.forEach(function (me) {
-                if (me.price > Game.cookies) {
-                    me.timeToTargetCookie = (me.price - Game.cookies) / Game.cookiesPs + target.price / me.newCookiesPs;
-                } else {
-                    me.timeToTargetCookie = (target.price + me.price - Game.cookies) / me.newCookiesPs;
+                me.timeToTargetCookie = getTimeToTarget(me.price, me.buy1Cps, target.price, Game.cookies);
+                if (me.tierPrice <= target.price) {
+                    const timeBuyTier = getTimeToTarget(me.tierPrice, me.tierCps, target.price, Game.cookies);
+                    me.timeToTargetCookie = Math.min(me.timeToTargetCookie, timeBuyTier);
                 }
             });
             helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
@@ -235,7 +309,7 @@ let BestDealHelper = {
         let all = [...buildings, ...upgrades];
 
         // Calculate cpsAcceleration
-        all.forEach(me => me.cpsAcceleration = BestDealHelper.getCpsAcceleration(me));
+        all.forEach(me => me.cpsAcceleration = BestDealHelper.findBestCpsAcceleration(me));
         // Sorting by cpsAcceleration
         all.sort((a, b) => b.cpsAcceleration - a.cpsAcceleration);
 
@@ -279,9 +353,10 @@ let BestDealHelper = {
         // Calculate waiting times
         all.forEach(function (me) {
             me.waitingTime = "";
-            if (me.price < Game.cookies) return;
+            let waitCookie = me.getPrice() - Game.cookies;
+            if (waitCookie < 0) return;
 
-            const seconds = (me.price - Game.cookies) / Game.cookiesPs;
+            const seconds = waitCookie / Game.cookiesPs;
             let a = [
                 Math.floor(seconds / 60 / 60 / 24 / 365) + "y",
                 Math.floor(seconds / 60 / 60 / 24 % 365) + "d",
