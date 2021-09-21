@@ -108,10 +108,16 @@ let BestDealHelper = {
         [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".product .content")[0].style.paddingTop = "0px";
         [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".price::before")[0].style.top = "0px";
 
-        // Trigger: wrap GameRebuildUpgrades
-        const GameRebuildUpgrades = Game.RebuildUpgrades;
+        // Trigger: wrap Game.RebuildUpgrades
+        BestDealHelper.RebuildUpgrades = Game.RebuildUpgrades;
         Game.RebuildUpgrades = function () {
-            GameRebuildUpgrades();
+            BestDealHelper.RebuildUpgrades();
+            BestDealHelper.logicLoop();
+        };
+        // Trigger: wrap Game.RefreshStore
+        BestDealHelper.RefreshStore = Game.RefreshStore;
+        Game.RefreshStore = function () {
+            BestDealHelper.RefreshStore();
             BestDealHelper.logicLoop();
         };
         // Trigger: checks from time to time
@@ -147,7 +153,7 @@ let BestDealHelper = {
 
     logicLoop: function () {
         BestDealHelper.loopCount++;
-        if (BestDealHelper.loopCount >= 20
+        if (BestDealHelper.loopCount >= 10
             || BestDealHelper.last_cps !== Game.cookiesPs
             || BestDealHelper.config.enableSort !== BestDealHelper.last_config_enableSort
             || BestDealHelper.config.ignoreWizardTower !== BestDealHelper.last_config_ignoreWizardTower
