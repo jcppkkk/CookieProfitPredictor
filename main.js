@@ -18,12 +18,12 @@
  * @property {DocumentFragment} l
  * @property {number} price
  * @property {number} timeToTargetCookie
- * @property {number} buy1Cps
+ * @property {number} buyOneCps
  * @property {number} BestHelper
  * @property {number} cpsAcceleration
  * @property {Upgrade[]} tieredUpgrades
  * @property {number} tierPrice
- * @property {number} tierCps
+ * @property {number} buyTierCps
  */
 /**
  * @typedef {Object} Upgrade
@@ -31,12 +31,12 @@
  * @property {function} isVaulted
  * @property {number} bought
  * @property {number} timeToTargetCookie
- * @property {number} buy1Cps
+ * @property {number} buyOneCps
  * @property {number} BestHelper
  * @property {number} cpsAcceleration
  * @property {number} tier
  * @property {number} tierPrice
- * @property {number} tierCps
+ * @property {number} buyTierCps
  */
 /**
  * @typedef {Object} Tier
@@ -79,7 +79,8 @@ let BestDealHelper = {
     name: "BestDealHelper",
 
     config: {
-        enableSort: 0,
+        enableSort: 1,
+        ignoreWizardTower: 0,
     },
 
     isLoaded: false,
@@ -95,6 +96,7 @@ let BestDealHelper = {
         BestDealHelper.last_cps = 0;
         BestDealHelper.last_buildings_order = [...Game.ObjectsById].map(e => e.id);
         BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
+        BestDealHelper.last_config_ignoreWizardTower = BestDealHelper.config.ignoreWizardTower;
 
         // iterable Updates
         const buildMap = obj => Object.keys(obj).reduce((map, key) => map.set(key, obj[key]), new Map());
@@ -134,20 +136,26 @@ let BestDealHelper = {
         const body = `
         <div class="listing">
             ${BestDealHelper.button("enableSort", "Sort ON (default)", "Sort OFF")}
-        </div>`;
+        </div>
+        <div class="listing">
+            ${BestDealHelper.button("ignoreWizardTower", "Ignore Wizard Tower ON", "Ignore Wizard Tower OFF (default)")}
+        </div>
+        `;
 
         CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
     },
 
     logicLoop: function () {
         BestDealHelper.loopCount++;
-        if (BestDealHelper.loopCount >= 10
+        if (BestDealHelper.loopCount >= 20
             || BestDealHelper.last_cps !== Game.cookiesPs
             || BestDealHelper.config.enableSort !== BestDealHelper.last_config_enableSort
+            || BestDealHelper.config.ignoreWizardTower !== BestDealHelper.last_config_ignoreWizardTower
             || !document.querySelector("#productAcc0")
             || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))) {
             BestDealHelper.sortDeals();
             BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
+            BestDealHelper.last_config_ignoreWizardTower = BestDealHelper.config.ignoreWizardTower;
             BestDealHelper.last_cps = Game.cookiesPs;
             BestDealHelper.loopCount = 0;
         }
@@ -170,9 +178,11 @@ let BestDealHelper = {
     findBestCpsAcceleration: function (me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
         if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)
+            || (BestDealHelper.config.ignoreWizardTower && me === Game.Objects["Wizard tower"])
             || me.pool === "toggle"
             || (me.isVaulted && me.isVaulted())
-            || Game.cookies === 0) {
+            || Game.cookies === 0
+        ) {
             return 0;
         }
 
@@ -209,31 +219,20 @@ let BestDealHelper = {
             if (i === 0) {
                 // record cps after buy 1
                 Game.CalculateGains();
-                me.buy1Cps = Game.cookiesPs;
-                buyOneAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, me.buy1Cps);
+                me.buyOneCps = Game.cookiesPs;
+                buyOneAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, me.buyOneCps);
             }
         }
         let buyTierAcc = 0;
         me.tierPrice = 0;
-        me.tierCps = 0;
+        me.buyTierCps = 0;
         if (nextTierUpgrade) {
             totalPrice += nextTierUpgrade.getPrice();
             nextTierUpgrade.bought++;
             Game.CalculateGains();
-            // foresee result of buying extra buildings after tier upgraded
-            let nextBuyTierAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, Game.cookiesPs);
-            while (nextBuyTierAcc >= buyTierAcc) {
-                buyTierAcc = nextBuyTierAcc;
-                me.tierPrice = totalPrice;
-                me.tierCps = Game.cookiesPs;
-
-                // Estimate buying next one
-                totalPrice += me.getPrice();
-                me.amount++;
-                me.bought++;
-                Game.CalculateGains();
-                nextBuyTierAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, Game.cookiesPs);
-            }
+            me.tierPrice = totalPrice;
+            me.buyTierCps = Game.cookiesPs;
+            buyTierAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, me.buyTierCps);
         }
 
 
@@ -275,9 +274,9 @@ let BestDealHelper = {
             if (!helpers.length) return;
 
             helpers.forEach(function (me) {
-                me.timeToTargetCookie = getTimeToTarget(me.price, me.buy1Cps, target.price, Game.cookies);
+                me.timeToTargetCookie = getTimeToTarget(me.price, me.buyOneCps, target.price, Game.cookies);
                 if (me.tierPrice <= target.price) {
-                    const timeBuyTier = getTimeToTarget(me.tierPrice, me.tierCps, target.price, Game.cookies);
+                    const timeBuyTier = getTimeToTarget(me.tierPrice, me.buyTierCps, target.price, Game.cookies);
                     me.timeToTargetCookie = Math.min(me.timeToTargetCookie, timeBuyTier);
                 }
             });
@@ -325,7 +324,7 @@ let BestDealHelper = {
             ["#00ff00", cpsAccList[1]],
             ["#00ffff", cpsAccList[0]],
         ].filter(e => e[1] !== undefined);
-        let color = chroma.scale(colorGroups.map(e=>e[0])).mode("lab").domain(colorGroups.map(e=>e[1]));
+        let color = chroma.scale(colorGroups.map(e => e[0])).mode("lab").domain(colorGroups.map(e => e[1]));
 
         // Normalized Notation by Mean
         let allAcc = all.map(e => e.cpsAcceleration).filter(e => e !== 0);
