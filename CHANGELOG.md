@@ -5,8 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2042.13] - 2021-09-22
 ### Added
-- Add: consider `cpsAcceleration` of multiple buying until tier upgrade
+- Add: `cpsAcceleration` now consider multiple buying until next tier upgrade.
+- Add: button to ignore Wizard Tower.
 
 ## [2042.12] - 2021-09-21
 ### Added
