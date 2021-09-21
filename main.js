@@ -317,33 +317,15 @@ let BestDealHelper = {
         BestDealHelper.findHelper(all);
 
         // Determine colors
-        all.forEach((e, index) => e.accRank = index);
-        let palette = ["#00ffff"];
-        let rank = 0;
-        let domain = [all[rank].cpsAcceleration];
-        rank++;
-        while (rank < all.length && all[rank].cpsAcceleration === all[0].cpsAcceleration) rank++;
-        if (rank < all.length) {
-            palette.unshift("#00ff00");
-            domain.unshift(all[rank].cpsAcceleration);
-        }
-        rank += 6;
-        if (rank < all.length) {
-            palette.unshift("#ffd939");
-            domain.unshift(all[rank].cpsAcceleration);
-        }
-        rank += 8;
-        if (rank < all.length) {
-            palette.unshift("#ff0000");
-            domain.unshift(all[rank].cpsAcceleration);
-        }
-        rank++;
-        if (rank < all.length) {
-            palette.unshift("#d82aff");
-            domain.unshift(all[all.length - 1].cpsAcceleration);
-        }
-
-        let color = chroma.scale(palette).mode("lab").domain(domain);
+        let cpsAccList = [...new Set(all.map(e => e.cpsAcceleration))].sort((a, b) => b - a);
+        const colorGroups = [
+            ["#d82aff", cpsAccList[cpsAccList.length - 1]],
+            ["#ff0000", cpsAccList[15]],
+            ["#ffd939", cpsAccList[7]],
+            ["#00ff00", cpsAccList[1]],
+            ["#00ffff", cpsAccList[0]],
+        ].filter(e => e[1] !== undefined);
+        let color = chroma.scale(colorGroups.map(e=>e[0])).mode("lab").domain(colorGroups.map(e=>e[1]));
 
         // Normalized Notation by Mean
         let allAcc = all.map(e => e.cpsAcceleration).filter(e => e !== 0);
