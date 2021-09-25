@@ -175,7 +175,11 @@ let BestDealHelper = {
         const deltaCps = newCps - cps;
         if (deltaCps === 0) return 0;
 
-        const deltaTime = Math.max(price - Game.cookies, 0) / cps + price / newCps;
+        let deltaTime;
+        if(price > Game.cookies)
+            deltaTime = (price - Game.cookies) / cps + Game.cookies / newCps;
+        else
+            deltaTime = price / newCps;
         if (deltaTime === 0) return 0; // "Milk selector"
 
         return deltaCps / deltaTime;
@@ -274,15 +278,15 @@ let BestDealHelper = {
             return time;
         }
 
-        while (target.price > Game.cookies) {
-            target.timeToTargetCookie = (target.price - Game.cookies) / Game.cookiesPs;
-            let helpers = all.filter(me => me !== target && me.price < target.price);
+        while (target.getPrice() > Game.cookies) {
+            target.timeToTargetCookie = (target.getPrice() - Game.cookies) / Game.cookiesPs;
+            let helpers = all.filter(me => me !== target && me.getPrice() < target.getPrice());
             if (!helpers.length) return;
 
             helpers.forEach(function (me) {
-                me.timeToTargetCookie = getTimeToTarget(me.price, me.buyOneCps, target.price, Game.cookies);
-                if (me.tierPrice <= target.price) {
-                    const timeBuyTier = getTimeToTarget(me.tierPrice, me.buyTierCps, target.price, Game.cookies);
+                me.timeToTargetCookie = getTimeToTarget(me.getPrice(), me.buyOneCps, target.getPrice(), Game.cookies);
+                if (me.tierPrice <= target.getPrice()) {
+                    const timeBuyTier = getTimeToTarget(me.tierPrice, me.buyTierCps, target.getPrice(), Game.cookies);
                     me.timeToTargetCookie = Math.min(me.timeToTargetCookie, timeBuyTier);
                 }
             });

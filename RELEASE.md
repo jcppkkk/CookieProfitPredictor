@@ -1,4 +1,3 @@
-## [2042.13] - 2021-09-22
-### Added
-- Add: `cpsAcceleration` now consider multiple buying until next tier upgrade.
-- Add: button to ignore Wizard Tower.
+## [2042.14] - 2021-09-25
+### Changed
+- Change: fix overestimated waiting time. the score is weighted too much on avoiding waiting, thus it increases quickly when deals are getting affordable; All good things are worth waiting for and worth fighting for.
