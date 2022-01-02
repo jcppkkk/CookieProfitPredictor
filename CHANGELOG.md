@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2043.03] - 2022-01-03
+### Fixed
+- CPS glitch #1
+
+## [2043.02] - 2021-12-21
+### Fixed
+- Loading error with Steam Workshop version
+
+## [2043.01] - 2021-12-21
+### Changed
+- Publish to Steam Workshop
+
 ## [2042.14] - 2021-09-25
 ### Changed
 - Change: fix overestimated waiting time. the score is weighted too much on avoiding waiting, thus it increases quickly when deals are getting affordable; All good things are worth waiting for and worth fighting for.   
@@ -30,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2042.11] - 2021-09-19
 ### Added
 - Add: Highlight pre-deal that can advance best-deal waiting time.
-- Add: Waiting time for deals. 
+- Add: Waiting time for deals.
 
 ### Changed
 - Change: calc deltaTime from price / deltaCps
@@ -42,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2042.9] - 2021-09-18
 ### Changed
 - Suppress notation on 0% upgrades.
-- Avoid sorting upgrades in toggle pool. 
+- Avoid sorting upgrades in toggle pool.
 
 ### Fixed
 - Fix errors afters ascend.
@@ -55,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix "raw cookies per second" get changed incorrect. However, this Mod cannot detect whether your stat is correct or incorrectly; Please export your save, visit https://coderpatsy.bitbucket.io/cookies/editor.html, change `Highest raw CpS` to 0 and import modified save back to fix the value.
 
 ### Changed
-- Grandmapocalypse related upgrades are set to 0%, including "One mind", "Communal brainsweep", "Elder pact". 
+- Grandmapocalypse related upgrades are set to 0%, including "One mind", "Communal brainsweep", "Elder pact".
 
 
 ## [2042.7] - 2021-09-18

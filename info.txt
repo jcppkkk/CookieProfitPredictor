@@ -1,12 +1,14 @@
 {
-	"Name": "Best Deal Helper",
-	"ID": "Best Deal Helper",
-	"Author": "Jethro Yu",
-	"Description": "Help you choose best deal!",
-	"ModVersion": 2042.14,
-	"GameVersion": 2.042,
-	"Date": "25/09/2021",
-	"Dependencies": ["CCSE"],
-	"Disabled": 1,
-	"AllowSteamAchievs": 1
+ "Name": "Best Deal Helper",
+ "ID": "BestDealHelper",
+ "Author": "Jethro Yu",
+ "Description": "Help you choose best deal!",
+ "ModVersion": 2043.03,
+ "GameVersion": 2.043,
+ "Date": "25/09/2021",
+ "Dependencies": [
+  "CCSE"
+ ],
+ "AllowSteamAchievs": 1,
+ "Workshop": "2689045003"
 }

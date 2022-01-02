@@ -22,8 +22,8 @@
  * @property {number} BestHelper
  * @property {number} cpsAcceleration
  * @property {Upgrade[]} tieredUpgrades
- * @property {number} tierPrice
- * @property {number} buyTierCps
+ * @property {number} BestChainPrice
+ * @property {number} BestChainCps
  */
 /**
  * @typedef {Object} Upgrade
@@ -35,8 +35,8 @@
  * @property {number} BestHelper
  * @property {number} cpsAcceleration
  * @property {number} tier
- * @property {number} tierPrice
- * @property {number} buyTierCps
+ * @property {number} BestChainPrice
+ * @property {number} BestChainCps
  */
 /**
  * @typedef {Object} Tier
@@ -73,67 +73,58 @@
  * @typedef {Object} CCSE
  * @property {function} AppendCollapsibleOptionsMenu
  */
-LoadScript(App.mods["Best Deal Helper"].dir + "/chroma.min.js");
+LoadScript(App.mods.BestDealHelper.dir + "/chroma.min.js");
 
-let BestDealHelper = {
+var BestDealHelper = {
     name: "BestDealHelper",
-
-    config: {
-        enableSort: 1,
-        ignoreWizardTower: 0,
-    },
-
     isLoaded: false,
     load_chroma: false,
     loopCount: 0,
+    last_cps: 0,
+    last_buildings_order: [],
+    last_config_enableSort: 1,
+    last_config_ignoreWizardTower: 0,
+    Upgrades: [],
 
     register: function () {
         Game.registerMod(this.name, this);
     },
 
-    "init": function () {
-        // configs
-        BestDealHelper.last_cps = 0;
-        BestDealHelper.last_buildings_order = [...Game.ObjectsById].map(e => e.id);
-        BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
-        BestDealHelper.last_config_ignoreWizardTower = BestDealHelper.config.ignoreWizardTower;
-
+    init: function () {
         // iterable Updates
         const buildMap = obj => Object.keys(obj).reduce((map, key) => map.set(key, obj[key]), new Map());
         BestDealHelper.Upgrades = buildMap(Game.UpgradesById);
-
         // UI: add menu
         Game.customOptionsMenu.push(BestDealHelper.addOptionsMenu);
         // UI: change building layout
         [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".product .content")[0].style.paddingTop = "0px";
         [...document.styleSheets[1].cssRules].filter(e => e.selectorText === ".price::before")[0].style.top = "0px";
 
-        // Trigger: wrap Game.RebuildUpgrades
-        BestDealHelper.RebuildUpgrades = Game.RebuildUpgrades;
-        Game.RebuildUpgrades = function () {
-            BestDealHelper.RebuildUpgrades();
-            BestDealHelper.logicLoop();
-        };
-        // Trigger: wrap Game.RefreshStore
-        BestDealHelper.RefreshStore = Game.RefreshStore;
-        Game.RefreshStore = function () {
-            BestDealHelper.RefreshStore();
-            BestDealHelper.logicLoop();
-        };
-        // Trigger: checks from time to time
+        // Hook: wrap Game.RebuildUpgrades
+        Game.OriginalRebuildUpgrades = Game.RebuildUpgrades;
+        Game.RebuildUpgrades = function () { Game.OriginalRebuildUpgrades(); BestDealHelper.logicLoop(); };
+        // Hook: wrap Game.RefreshStore
+        Game.OriginalRefreshStore = Game.RefreshStore;
+        Game.RefreshStore = function () { Game.OriginalRefreshStore(); BestDealHelper.logicLoop(); };
+        // Check changes from time to time
         setTimeout(function () {
             setInterval(BestDealHelper.logicLoop, 200);
         }, 500);
         BestDealHelper.isLoaded = true;
     },
 
-    "load": function (str) {
+    config: {
+        enableSort: 1,
+        ignoreWizardTower: 0,
+    },
+
+    load: function (str) {
         const config = JSON.parse(str);
         for (const c in config) BestDealHelper.config[c] = config[c];
         BestDealHelper.sortDeals();
     },
 
-    "save": function () {
+    save: function () {
         return JSON.stringify(BestDealHelper.config);
     },
 
@@ -141,10 +132,10 @@ let BestDealHelper = {
     addOptionsMenu: function () {
         const body = `
         <div class="listing">
-            ${BestDealHelper.button("enableSort", "Sort ON (default)", "Sort OFF")}
+            ${BestDealHelper.button("enableSort", "Sort Buildings and Upgrades ON", "Sort Buildings and Upgrades OFF")}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("ignoreWizardTower", "Ignore Wizard Tower ON", "Ignore Wizard Tower OFF (default)")}
+            ${BestDealHelper.button("ignoreWizardTower", "Ignore Wizard Tower ON", "Ignore Wizard Tower OFF")}
         </div>
         `;
 
@@ -153,12 +144,13 @@ let BestDealHelper = {
 
     logicLoop: function () {
         BestDealHelper.loopCount++;
-        if (BestDealHelper.loopCount >= 10
-            || BestDealHelper.last_cps !== Game.cookiesPs
-            || BestDealHelper.config.enableSort !== BestDealHelper.last_config_enableSort
-            || BestDealHelper.config.ignoreWizardTower !== BestDealHelper.last_config_ignoreWizardTower
-            || !document.querySelector("#productAcc0")
-            || (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))) {
+        if (BestDealHelper.loopCount >= 10 ||
+            BestDealHelper.last_cps !== Game.cookiesPs ||
+            BestDealHelper.config.enableSort !== BestDealHelper.last_config_enableSort ||
+            BestDealHelper.config.ignoreWizardTower !== BestDealHelper.last_config_ignoreWizardTower ||
+            !document.querySelector("#productAcc0") ||
+            (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))
+        ) {
             BestDealHelper.sortDeals();
             BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
             BestDealHelper.last_config_ignoreWizardTower = BestDealHelper.config.ignoreWizardTower;
@@ -176,7 +168,7 @@ let BestDealHelper = {
         if (deltaCps === 0) return 0;
 
         let deltaTime;
-        if(price > Game.cookies)
+        if (price > Game.cookies)
             deltaTime = (price - Game.cookies) / cps + Game.cookies / newCps;
         else
             deltaTime = price / newCps;
@@ -187,11 +179,11 @@ let BestDealHelper = {
 
     findBestCpsAcceleration: function (me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
-        if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name)
-            || (BestDealHelper.config.ignoreWizardTower && me === Game.Objects["Wizard tower"])
-            || me.pool === "toggle"
-            || (me.isVaulted && me.isVaulted())
-            || Game.cookies === 0
+        if (["One mind", "Communal brainsweep", "Elder pact"].includes(me.name) ||
+            (BestDealHelper.config.ignoreWizardTower && me === Game.Objects["Wizard tower"]) ||
+            me.pool === "toggle" ||
+            (me.isVaulted && me.isVaulted()) ||
+            Game.cookies === 0
         ) {
             return 0;
         }
@@ -214,11 +206,14 @@ let BestDealHelper = {
         let totalPrice = 0;
         let buyOneAcc = 0;
 
-
         // Backup before emulation
-        Game.Logic_ = Game.Logic;
-        Game.Logic = function () {};
+        const oldLogic = Game.Logic;
+        Game.Logic = function () { };
+        const oldWin = Game.Win;
+        Game.Win = function () { };
+        Game.cpsAchievements = [];
         const oldCookiesPsRawHighest = Game.cookiesPsRawHighest;
+        const oldCpsAchievements = Game.cpsAchievements;
         const oldAmount = me.amount;
         const oldBought = me.bought;
 
@@ -233,26 +228,52 @@ let BestDealHelper = {
                 buyOneAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, me.buyOneCps);
             }
         }
+        // Evaluate multiple upgrades with tier unlock
         let buyTierAcc = 0;
-        me.tierPrice = 0;
-        me.buyTierCps = 0;
+        me.BestChainPrice = 0;
+        me.BestChainCps = 0;
+        me.BestChainAmount = 0;
         if (nextTierUpgrade) {
             totalPrice += nextTierUpgrade.getPrice();
             nextTierUpgrade.bought++;
             Game.CalculateGains();
-            me.tierPrice = totalPrice;
-            me.buyTierCps = Game.cookiesPs;
-            buyTierAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, me.buyTierCps);
+            buyTierAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, Game.cookiesPs);
+
+            me.BestChainPrice = totalPrice;
+            me.BestChainCps = Game.cookiesPs;
+            me.BestChainAmount = me.amount;
+            // Evaluate CpsAcc with more buildings after TierUpgrade
+            while (true) {
+                totalPrice += me.getPrice();
+                me.amount++;
+                me.bought++;
+                Game.CalculateGains();
+                let nextAcc = BestDealHelper.getCpsAcceleration(totalPrice, oldCps, Game.cookiesPs);
+                if (nextAcc > buyTierAcc) {
+                    buyTierAcc = nextAcc;
+                    me.BestChainCps = totalPrice;
+                    me.BestChainCps = Game.cookiesPs;
+                    me.BestChainAmount = me.amount;
+                } else {
+                    break;
+                }
+            }
+            if (buyTierAcc < buyOneAcc) {
+                me.BestChainPrice = 0;
+                me.BestChainCps = 0;
+                me.BestChainAmount = 0;
+            }
         }
-
-
+        
         // Restore after emulation
+        if (nextTierUpgrade) nextTierUpgrade.bought--;
         me.amount = oldAmount;
         me.bought = oldBought;
-        if (nextTierUpgrade) nextTierUpgrade.bought--;
-        Game.CalculateGains();
         Game.cookiesPsRawHighest = oldCookiesPsRawHighest;
-        Game.Logic = Game.Logic_;
+        Game.cpsAchievements = oldCpsAchievements;
+        Game.Win = oldWin;
+        Game.Logic = oldLogic;
+        Game.CalculateGains();
 
         return Math.max(buyOneAcc, buyTierAcc);
     },
@@ -266,6 +287,7 @@ let BestDealHelper = {
         let i = 0;
         let target = all[0];
 
+        // TODO: in case of multiple upgrades, the cps increases during each upgrade, thus this is not accurate
         function getTimeToTarget(helperPrice, helperCps, targetPrice, cookies) {
             let time = 0;
             if (cookies >= helperPrice) {
@@ -278,18 +300,22 @@ let BestDealHelper = {
             return time;
         }
 
+        var cheaper_items = function (me) {
+            return me !== target && me.getPrice() < target.getPrice();
+        };
+        calc_ttc = function (me) {
+            me.timeToTargetCookie = getTimeToTarget(me.getPrice(), me.buyOneCps, target.getPrice(), Game.cookies);
+            if (me.BestChainPrice <= target.getPrice()) {
+                const timeBuyTier = getTimeToTarget(me.BestChainPrice, me.BestChainCps, target.getPrice(), Game.cookies);
+                me.timeToTargetCookie = Math.min(me.timeToTargetCookie, timeBuyTier);
+            }
+        };
         while (target.getPrice() > Game.cookies) {
             target.timeToTargetCookie = (target.getPrice() - Game.cookies) / Game.cookiesPs;
-            let helpers = all.filter(me => me !== target && me.getPrice() < target.getPrice());
+            let helpers = all.filter(cheaper_items);
             if (!helpers.length) return;
 
-            helpers.forEach(function (me) {
-                me.timeToTargetCookie = getTimeToTarget(me.getPrice(), me.buyOneCps, target.getPrice(), Game.cookies);
-                if (me.tierPrice <= target.getPrice()) {
-                    const timeBuyTier = getTimeToTarget(me.tierPrice, me.buyTierCps, target.getPrice(), Game.cookies);
-                    me.timeToTargetCookie = Math.min(me.timeToTargetCookie, timeBuyTier);
-                }
-            });
+            helpers.forEach(calc_ttc);
             helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
             if (helpers[0].timeToTargetCookie >= target.timeToTargetCookie) return;
             i++;
@@ -390,7 +416,7 @@ let BestDealHelper = {
             if (me.BestHelper) {
                 BestDealHelper.rainbow(span);
             } else {
-                try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
+                try { span.style.color = color(me.cpsAcceleration); } catch (e) { }
             }
         }
         // Notation for buildings
@@ -421,11 +447,14 @@ let BestDealHelper = {
                 }
             }
             span.textContent = " 💹" + value + "%";
+            if (me.BestChainAmount > 1) {
+                span.textContent += " (buy to " + me.BestChainAmount + ")";
+            }
             if (me.waitingTime) span.textContent += " ⏳" + me.waitingTime;
             if (me.BestHelper) {
                 BestDealHelper.rainbow(span);
             } else {
-                try {span.style.color = color(me.cpsAcceleration);} catch (e) { }
+                try { span.style.color = color(me.cpsAcceleration); } catch (e) { }
             }
         }
 
@@ -482,7 +511,7 @@ let BestDealHelper = {
         return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? texton : textoff}</a>`;
     },
 
-    "buttonCallback": function (config, button, texton, textoff) {
+    buttonCallback: function (config, button, texton, textoff) {
         const value = !BestDealHelper.config[config];
         BestDealHelper.config[config] = value;
         l(button).innerHTML = value ? texton : textoff;
@@ -493,8 +522,11 @@ let BestDealHelper = {
 
 };
 
-// Bind methods
-for (func of Object.getOwnPropertyNames(BestDealHelper).filter(m => typeof BestDealHelper[m] === "function")) {
+// Bind methods`
+const methods = Object.getOwnPropertyNames(BestDealHelper).filter(
+    m => typeof BestDealHelper[m] === "function"
+);
+for (var func of methods) {
     /**
      * @typedef {string} func
      */
@@ -514,4 +546,3 @@ if (!BestDealHelper.isLoaded) {
         CCSE.postLoadHooks.push(BestDealHelper.register);
     }
 }
-
