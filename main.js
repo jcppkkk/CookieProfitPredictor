@@ -188,18 +188,17 @@ var BestDealHelper = {
             return 0;
         }
 
-        let amount;
+        let amount = 1;
         let nextTierUpgrade;
-        if (me.type === "upgrade") {
-            amount = 1;
-        } else {
+        if (me.type !== "upgrade") {
             // for buildings, find amount to unlock next tier
             const lockedTiers = me.tieredUpgrades.filter(e => Game.Tiers[e.tier].unlock !== -1 && e.buildingTie.bought < Game.Tiers[e.tier].unlock);
             if (lockedTiers.length) {
-                amount = Game.Tiers[lockedTiers[0].tier].unlock - me.bought;
-                nextTierUpgrade = lockedTiers[0];
-            } else {
-                amount = 1;
+                amountToUnlockTier = Game.Tiers[lockedTiers[0].tier].unlock - me.bought;
+                if (amountToUnlockTier < 15){
+                    amount = amountToUnlockTier;
+                    nextTierUpgrade = lockedTiers[0];
+                }
             }
         }
         const oldCps = Game.cookiesPs;

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2043.04] - 2022-01-07
+### Fixed
+- game hangs 0.x second after each buying
+
 ## [2043.03] - 2022-01-03
 ### Fixed
 - CPS glitch #1

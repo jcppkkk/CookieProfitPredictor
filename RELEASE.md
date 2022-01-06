@@ -1,3 +1,3 @@
-## [2043.03] - 2022-01-03
+## [2043.04] - 2022-01-07
 ### Fixed
-- CPS glitch #1
+- game hangs 0.x second after each buying

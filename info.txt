@@ -3,7 +3,7 @@
  "ID": "BestDealHelper",
  "Author": "Jethro Yu",
  "Description": "Help you choose best deal!",
- "ModVersion": 2043.03,
+ "ModVersion": 2043.04,
  "GameVersion": 2.043,
  "Date": "25/09/2021",
  "Dependencies": [
