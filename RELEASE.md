@@ -1,3 +1,4 @@
-## [2043.04] - 2022-01-07
-### Fixed
-- game hangs 0.x second after each buying
+## [2043.05] - 2022-01-09
+### Changed
+- Rewrite buying chain calculation based on accumulated waiting time instead of accumulated price
+- Use VS code ts-check and fix typing errors
