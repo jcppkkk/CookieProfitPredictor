@@ -42,6 +42,7 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
 /**
  * @typedef Upgrade
  * @type {Object}
+ * @property {Object} Idleverse
  * @property {function} isVaulted
  * @property {number} bought
  * @property {number} tier
@@ -58,6 +59,7 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
 /**
  * @typedef Tier
  * @type {Object}
+ * @property {number} unlock
  */
 /**
  * @typedef Game
@@ -73,9 +75,9 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {Object} GrandmaSynergies.buildingTie
  * @property {String[]} GrandmaSynergies
  * @property {number} GrandmaSynergies.buildingTie.storedTotalCps
- * @property {{string:Building}} Objects
- * @property {{number:Upgrade}} UpgradesById
- * @property {{string:Tier}} Tiers
+ * @property {Object.<string, Building>} Objects
+ * @property {Object.<string,Tier>} Tiers
+ * @property {Upgrade[]} UpgradesById
  * @property {Building[]} ObjectsById
  * @property {Upgrade[]} UpgradesInStore
  * @property {Array} customOptionsMenu
@@ -120,6 +122,7 @@ var BestDealHelper = {
     last_buildings_order: [],
     last_config_enableSort: 1,
     last_config_ignoreWizardTower: 0,
+    last_config_ignoreIdleverse: 0,
     Upgrades: new Map(),
 
     register: function () {
@@ -160,6 +163,7 @@ var BestDealHelper = {
     config: {
         enableSort: 1,
         ignoreWizardTower: 0,
+        ignoreIdleverse: 0,
     },
 
     load: function (str) {
@@ -181,6 +185,9 @@ var BestDealHelper = {
         <div class="listing">
             ${BestDealHelper.button("ignoreWizardTower", "Ignore Wizard Tower ON", "Ignore Wizard Tower OFF")}
         </div>
+        <div class="listing">
+            ${BestDealHelper.button("ignoreIdleverse", "Ignore Idleverse ON", "Ignore Idleverse OFF")}
+        </div>
         `;
 
         CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
@@ -192,12 +199,14 @@ var BestDealHelper = {
             BestDealHelper.last_cps !== Game.cookiesPs ||
             BestDealHelper.config.enableSort !== BestDealHelper.last_config_enableSort ||
             BestDealHelper.config.ignoreWizardTower !== BestDealHelper.last_config_ignoreWizardTower ||
+            BestDealHelper.config.ignoreIdleverse !== BestDealHelper.last_config_ignoreIdleverse ||
             !document.querySelector("#productAcc0") ||
             (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))
         ) {
             BestDealHelper.sortDeals();
             BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
             BestDealHelper.last_config_ignoreWizardTower = BestDealHelper.config.ignoreWizardTower;
+            BestDealHelper.last_config_ignoreIdleverse = BestDealHelper.config.ignoreIdleverse;
             BestDealHelper.last_cps = Game.cookiesPs;
             BestDealHelper.loopCount = 0;
         }
@@ -207,7 +216,7 @@ var BestDealHelper = {
         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
     },
 
-    calcCookieTimsCost: function (price, oldCps, cookies, waitTime, simCost) {
+    calcCookieTimesCost: function (price, oldCps, cookies, waitTime, simCost) {
         if (cookies >= price)
             return [cookies - price, waitTime, simCost + price];
         else
@@ -218,6 +227,7 @@ var BestDealHelper = {
         // Treat Grandmapocalypse upgrade as 0% temporary
         if (["Milk selector", "One mind", "Communal brainsweep", "Elder pact"].includes(me.name) ||
             (BestDealHelper.config.ignoreWizardTower && me === Game.Objects["Wizard tower"]) ||
+            (BestDealHelper.config.ignoreIdleverse && me === Game.Objects.Idleverse) ||
             me.pool === "toggle" ||
             (me.isVaulted && me.isVaulted()) ||
             Game.cookies === 0
@@ -256,7 +266,7 @@ var BestDealHelper = {
         const oldBought = me.bought;
 
         for (let i = 0; i < amount; i++) {
-            [simCookies, simWaitTime, simCost] = BestDealHelper.calcCookieTimsCost(me.getPrice(), Game.cookiesPs, simCookies, simWaitTime, simCost);
+            [simCookies, simWaitTime, simCost] = BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPs, simCookies, simWaitTime, simCost);
             me.amount++;
             me.bought++;
             if (i === 0) {
@@ -270,7 +280,7 @@ var BestDealHelper = {
         }
         // Evaluate multiple upgrades with tier unlock
         if (nextTierUpgrade) {
-            [simCookies, simWaitTime, simCost] = BestDealHelper.calcCookieTimsCost(nextTierUpgrade.getPrice(), Game.cookiesPs, simCookies, simWaitTime, simCost);
+            [simCookies, simWaitTime, simCost] = BestDealHelper.calcCookieTimesCost(nextTierUpgrade.getPrice(), Game.cookiesPs, simCookies, simWaitTime, simCost);
             nextTierUpgrade.bought++;
             Game.CalculateGains();
             let tierChainAmount = me.amount;
@@ -279,7 +289,7 @@ var BestDealHelper = {
             let tierCpsAcceleration = (Game.cookiesPs - oldCps) / me.BestWaitTime;
             // Evaluate CpsAcc with more buildings after TierUpgrade
             while (true) {
-                [simCookies, simWaitTime, simCost] = BestDealHelper.calcCookieTimsCost(me.getPrice(), Game.cookiesPs, simCookies, simWaitTime, simCost);
+                [simCookies, simWaitTime, simCost] = BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPs, simCookies, simWaitTime, simCost);
                 me.amount++;
                 me.bought++;
                 Game.CalculateGains();
@@ -336,7 +346,7 @@ var BestDealHelper = {
             }
             if (!helpers.length) return;
             for (let me of helpers) {
-                // TODO: not perfact for multiple upgrades
+                // TODO: not perfect for multiple upgrades
                 me.timeToTargetCookie = me.BestWaitTime + target.BestWaitTime * Game.cookiesPs / me.BestCps;
             }
             helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
@@ -526,17 +536,17 @@ var BestDealHelper = {
         }
     },
 
-    button: function (config, texton, textoff) {
+    button: function (config, textOn, textOff) {
         const name = `BestDealHelper${config}button`;
-        const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${texton}', '${textoff}');`;
+        const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${textOn}', '${textOff}');`;
         const value = BestDealHelper.config[config];
-        return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? texton : textoff}</a>`;
+        return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? textOn : textOff}</a>`;
     },
 
-    buttonCallback: function (config, button, texton, textoff) {
+    buttonCallback: function (config, button, textOn, textOff) {
         const value = !BestDealHelper.config[config];
         BestDealHelper.config[config] = value;
-        l(button).innerHTML = value ? texton : textoff;
+        l(button).innerHTML = value ? textOn : textOff;
         l(button).className = value ? "option" : "option off";
         PlaySound("snd/tick.mp3");
     },
