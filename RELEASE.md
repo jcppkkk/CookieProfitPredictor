@@ -1,3 +1,3 @@
-## [2043.06] - 2022.01.31
-### Added
-- Excluding Idleverses (togglable)
+## [2043.07] - 2022.02.13
+### Update
+- Improve the calculation of the best deal helper

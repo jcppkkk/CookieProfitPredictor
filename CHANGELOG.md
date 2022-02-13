@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2043.07] - 2022.02.13
+### Update
+- Improve the calculation of the best deal helper
+ 
 ## [2043.06] - 2022.01.31
 ### Added
 - Excluding Idleverses (togglable)

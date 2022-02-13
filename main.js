@@ -25,6 +25,8 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @typedef Building
  * @type {Object}
  * @property {number} price
+ * @property {number} amount
+ * @property {number} bought
  * @property {Upgrade[]} tieredUpgrades
  * @property {number} BestChainAmount
  * @property {number} locked
@@ -32,9 +34,10 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {function} getPrice
  * @property {Element} l
  * @property {number} timeToTargetCookie
+ * @property {number} SingleCps
+ * @property {number} BestCps
  * @property {number} BestHelper
  * @property {number} BestWaitTime
- * @property {number} BestCps
  * @property {number} BestCpsAcceleration
  * @property {string} pool
  * @property {string} waitingTime
@@ -44,14 +47,16 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @type {Object}
  * @property {Object} Idleverse
  * @property {function} isVaulted
+ * @property {number} amount
  * @property {number} bought
  * @property {number} tier
  * @property {function} getPrice
  * @property {Element} l
  * @property {number} timeToTargetCookie
+ * @property {number} SingleCps
+ * @property {number} BestCps
  * @property {number} BestHelper
  * @property {number} BestWaitTime
- * @property {number} BestCps
  * @property {number} BestCpsAcceleration
  * @property {string} pool
  * @property {string} waitingTime
@@ -155,7 +160,7 @@ var BestDealHelper = {
         Game.RefreshStore = function () { OriginalRefreshStore(); BestDealHelper.logicLoop(); };
         // Check changes from time to time
         setTimeout(function () {
-            setInterval(BestDealHelper.logicLoop, 200);
+            setInterval(BestDealHelper.logicLoop, 100);
         }, 500);
         BestDealHelper.isLoaded = true;
     },
@@ -274,6 +279,7 @@ var BestDealHelper = {
                 Game.CalculateGains();
                 me.BestChainAmount = 0;
                 me.BestWaitTime = (simWaitTime + simCost / Game.cookiesPs);
+                me.SingleCps = Game.cookiesPs;
                 me.BestCps = Game.cookiesPs;
                 me.BestCpsAcceleration = (Game.cookiesPs - oldCps) / me.BestWaitTime;
             }
@@ -340,14 +346,14 @@ var BestDealHelper = {
             /** @type {(Building | Upgrade)[]} */
             let helpers = [];
             for (let e of all) {
-                if (e !== target && e.getPrice() < target.getPrice() && e.BestCpsAcceleration != 0) {
+                if (e !== target && e.getPrice() < target.getPrice() && e.SingleCps != 0) {
                     helpers.push(e);
                 }
             }
             if (!helpers.length) return;
             for (let me of helpers) {
-                // TODO: not perfect for multiple upgrades
-                me.timeToTargetCookie = me.BestWaitTime + target.BestWaitTime * Game.cookiesPs / me.BestCps;
+                me.timeToTargetCookie = Math.max(0, me.getPrice() - Game.cookies) / Game.cookiesPs +
+                    (target.getPrice() - Math.max(0, Game.cookies - me.getPrice())) / me.SingleCps;
             }
             helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
             if (helpers[0].timeToTargetCookie >= target.timeToTargetCookie) return;
