@@ -117,6 +117,16 @@ var App;
 var Game;
 
 LoadScript(App.mods.BestDealHelper.dir + "/chroma.min.js");
+var BestDealHelper_default_config = {
+    enableSort: 1,
+    ignoreWizardTower: 0,
+    ignoreIdleverse: 0,
+    color0: "#00ffff",
+    color1: "#00ff00",
+    color7: "#ffd939",
+    color15: "#ff0000",
+    colorLast: "#d82aff",
+};
 
 var BestDealHelper = {
     name: "BestDealHelper",
@@ -125,9 +135,6 @@ var BestDealHelper = {
     loopCount: 0,
     last_cps: 0,
     last_buildings_order: [],
-    last_config_enableSort: 1,
-    last_config_ignoreWizardTower: 0,
-    last_config_ignoreIdleverse: 0,
     Upgrades: new Map(),
 
     register: function () {
@@ -165,11 +172,8 @@ var BestDealHelper = {
         BestDealHelper.isLoaded = true;
     },
 
-    config: {
-        enableSort: 1,
-        ignoreWizardTower: 0,
-        ignoreIdleverse: 0,
-    },
+    config: { ...BestDealHelper_default_config},
+    last_config: { ...BestDealHelper_default_config},
 
     load: function (str) {
         const config = JSON.parse(str);
@@ -181,37 +185,16 @@ var BestDealHelper = {
         return JSON.stringify(BestDealHelper.config);
     },
 
-
-    addOptionsMenu: function () {
-        const body = `
-        <div class="listing">
-            ${BestDealHelper.button("enableSort", "Sort Buildings and Upgrades ON", "Sort Buildings and Upgrades OFF")}
-        </div>
-        <div class="listing">
-            ${BestDealHelper.button("ignoreWizardTower", "Ignore Wizard Tower ON", "Ignore Wizard Tower OFF")}
-        </div>
-        <div class="listing">
-            ${BestDealHelper.button("ignoreIdleverse", "Ignore Idleverse ON", "Ignore Idleverse OFF")}
-        </div>
-        `;
-
-        CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
-    },
-
     logicLoop: function () {
         BestDealHelper.loopCount++;
         if (BestDealHelper.loopCount >= 10 ||
             BestDealHelper.last_cps !== Game.cookiesPs ||
-            BestDealHelper.config.enableSort !== BestDealHelper.last_config_enableSort ||
-            BestDealHelper.config.ignoreWizardTower !== BestDealHelper.last_config_ignoreWizardTower ||
-            BestDealHelper.config.ignoreIdleverse !== BestDealHelper.last_config_ignoreIdleverse ||
+            JSON.stringify(BestDealHelper.config) !== JSON.stringify(BestDealHelper.last_config) ||
             !document.querySelector("#productAcc0") ||
             (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))
         ) {
             BestDealHelper.sortDeals();
-            BestDealHelper.last_config_enableSort = BestDealHelper.config.enableSort;
-            BestDealHelper.last_config_ignoreWizardTower = BestDealHelper.config.ignoreWizardTower;
-            BestDealHelper.last_config_ignoreIdleverse = BestDealHelper.config.ignoreIdleverse;
+            BestDealHelper.last_config = { ...BestDealHelper.config};
             BestDealHelper.last_cps = Game.cookiesPs;
             BestDealHelper.loopCount = 0;
         }
@@ -391,11 +374,11 @@ var BestDealHelper = {
         // Determine colors
         let cpsAccList = [...new Set(all.map(e => e.BestCpsAcceleration))].sort((a, b) => b - a);
         const colorGroups = [
-            ["#d82aff", cpsAccList[cpsAccList.length - 1]],
-            ["#ff0000", cpsAccList[15]],
-            ["#ffd939", cpsAccList[7]],
-            ["#00ff00", cpsAccList[1]],
-            ["#00ffff", cpsAccList[0]],
+            [BestDealHelper.config.colorLast, cpsAccList[cpsAccList.length - 1]],
+            [BestDealHelper.config.color15, cpsAccList[15]],
+            [BestDealHelper.config.color7, cpsAccList[7]],
+            [BestDealHelper.config.color1, cpsAccList[1]],
+            [BestDealHelper.config.color0, cpsAccList[0]],
         ].filter(e => e[1] !== undefined);
         // @ts-ignore
         let color = chroma.scale(colorGroups.map(e => e[0])).mode("lab").domain(colorGroups.map(e => e[1]));
@@ -542,8 +525,31 @@ var BestDealHelper = {
         }
     },
 
+    addOptionsMenu: function () {
+        const body = `
+        <div class="listing">
+            ${BestDealHelper.button("enableSort", "Sort Buildings and Upgrades ON", "Sort Buildings and Upgrades OFF")}
+        </div> <div class="listing">
+            ${BestDealHelper.button("ignoreWizardTower", "Ignore Wizard Tower ON", "Ignore Wizard Tower OFF")}
+        </div> <div class="listing">
+            ${BestDealHelper.button("ignoreIdleverse", "Ignore Idleverse ON", "Ignore Idleverse OFF")}
+        </div> <div class="listing">
+            ${BestDealHelper.colorPicker("color0", "Best deal color")}
+        </div> <div class="listing">
+            ${BestDealHelper.colorPicker("color1", "2nd deal color")}
+        </div> <div class="listing">
+            ${BestDealHelper.colorPicker("color7", "8st deal color")}
+        </div> <div class="listing">
+            ${BestDealHelper.colorPicker("color15", "16st deal color")}
+        </div> <div class="listing">
+            ${BestDealHelper.colorPicker("colorLast", "Worst deal color")}
+        </div>`;
+
+        CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
+    },
+    
     button: function (config, textOn, textOff) {
-        const name = `BestDealHelper${config}button`;
+        const name = `BestDealHelper${config}Button`;
         const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${textOn}', '${textOff}');`;
         const value = BestDealHelper.config[config];
         return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? textOn : textOff}</a>`;
@@ -557,7 +563,19 @@ var BestDealHelper = {
         PlaySound("snd/tick.mp3");
     },
 
+    colorPicker: function (/** @type {string} */ config, /** @type {string} */ text) {
+        const name = `BestDealHelper${config}Picker`;
+        const callback = `BestDealHelper.colorPickerCallback('${config}', '${name}');`;
+        const defaultColor = BestDealHelper_default_config[config];
+        const reset = `BestDealHelper.config.${config}='${defaultColor}';l('${name}').value='${defaultColor}';`;
+        const value = BestDealHelper.config[config];
+        return `<input type="color" id="${name}" value=${value} oninput="${callback}"><label>${text}</label></a><a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
+    },
 
+    colorPickerCallback: function (/** @type {string} */ config, /** @type {string} */ pickerID) {
+        const value = l(pickerID).value;
+        BestDealHelper.config[config] = value;
+    }
 };
 
 // Bind methods`
