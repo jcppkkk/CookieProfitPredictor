@@ -275,7 +275,7 @@ var BestDealHelper = {
             let tierChainAmount = me.amount;
             let tierWaitTime = (simWaitTime + simCost / Game.cookiesPs);
             let tierCps = Game.cookiesPs;
-            let tierCpsAcceleration = (Game.cookiesPs - oldCps) / me.BestWaitTime;
+            let tierCpsAcceleration = (Game.cookiesPs - oldCps) / tierWaitTime;
             // Evaluate CpsAcc with more buildings after TierUpgrade
             while (true) {
                 [simCookies, simWaitTime, simCost] = BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPs, simCookies, simWaitTime, simCost);
