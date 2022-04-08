@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2043.09] - 2022.04.09
+### Fixed
+- Fix bug with tiered upgrades -- thanks Michael Precup
+
 ## [2043.08] - 2022.03.12
 ### Added
 - Allow change color in settings page
