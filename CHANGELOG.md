@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2043.10] - 2022.04.24
+### New
+- Add month as waiting time unit
+### Change
+- Refactoring code, break down main function
+
 ## [2043.09] - 2022.04.09
 ### Fixed
 - Fix bug with tiered upgrades -- thanks Michael Precup
