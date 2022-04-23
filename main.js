@@ -29,7 +29,6 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {function} getPrice
  * @property {number} amount
  * @property {number} BestChainAmount
- * @property {number} BestCps
  * @property {number} BestCpsAcceleration
  * @property {number} BestHelper
  * @property {number} BestWaitTime
@@ -54,7 +53,6 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {function} isVaulted
  * @property {number} amount
  * @property {number} BestChainAmount
- * @property {number} BestCps
  * @property {number} BestCpsAcceleration
  * @property {number} BestHelper
  * @property {number} BestWaitTime
@@ -129,8 +127,9 @@ var Game;
 LoadScript(App.mods.BestDealHelper.dir + "/chroma.min.js");
 var BestDealHelper_default_config = {
     enableSort: 1,
-    ignoreWizardTower: 0,
-    ignoreIdleverse: 0,
+    sortGrandmapocalypse: 1,
+    sortWizardTower: 1,
+    sortIdleverse: 1,
     color0: "#00ffff",
     color1: "#00ff00",
     color7: "#ffd939",
@@ -186,7 +185,11 @@ var BestDealHelper = {
 
     load: function (/** @type {string} */ str) {
         const config = JSON.parse(str);
-        for (const c in config) BestDealHelper.config[c] = config[c];
+        for (const c in config) {
+            if (BestDealHelper.config.hasOwnProperty(c)) {
+                BestDealHelper.config[c] = config[c];
+            }
+        }
         BestDealHelper.updateUI();
     },
 
@@ -228,15 +231,19 @@ var BestDealHelper = {
             return [0, waitTime + (price - cookies) / oldCps, simCost + cookies];
     },
 
+    isIgnored: function (/** @type {(Building|Upgrade)} */ me) {
+        return (
+            (!BestDealHelper.config.sortGrandmapocalypse && ["One mind", "Communal brainsweep", "Elder Pact"].includes(me.name)) ||
+            (!BestDealHelper.config.sortWizardTower && me.name == "Wizard tower") ||
+            (!BestDealHelper.config.sortIdleverse && me.name == "Idleverse") ||
+            me.pool === "toggle" ||
+            (me.isVaulted && me.isVaulted())
+        );
+    },
+
     updateBestCpsAcceleration: function (/** @type {(Building|Upgrade)} */ me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
-        if (["Milk selector", "One mind", "Communal brainsweep", "Elder pact"].includes(me.name) ||
-            (BestDealHelper.config.ignoreWizardTower && me === Game.Objects["Wizard tower"]) ||
-            (BestDealHelper.config.ignoreIdleverse && me === Game.Objects.Idleverse) ||
-            me.pool === "toggle" ||
-            (me.isVaulted && me.isVaulted()) ||
-            Game.cookies === 0
-        ) {
+        if (BestDealHelper.isIgnored(me) || Game.cookies === 0) {
             me.BestCpsAcceleration = 0;
             return;
         }
@@ -280,7 +287,6 @@ var BestDealHelper = {
                 me.BestChainAmount = 0;
                 me.BestWaitTime = (simWaitTime + simCost / Game.cookiesPs);
                 me.SingleCps = Game.cookiesPs;
-                me.BestCps = Game.cookiesPs;
                 me.BestCpsAcceleration = (Game.cookiesPs - oldCps) / me.BestWaitTime;
             }
         }
@@ -315,7 +321,6 @@ var BestDealHelper = {
             if (tierCpsAcceleration > me.BestCpsAcceleration) {
                 me.BestChainAmount = tierChainAmount;
                 me.BestWaitTime = tierWaitTime;
-                me.BestCps = tierCps;
                 me.BestCpsAcceleration = tierCpsAcceleration;
             }
         }
@@ -336,6 +341,7 @@ var BestDealHelper = {
      */
     updateHelperOrder: function (/** @type {(Building | Upgrade)[]} */ all) {
         all.forEach(e => e.BestHelper = 0);
+        all = all.filter(e => !BestDealHelper.isIgnored(e));
 
         let i = 0;
         let target = all[0];
@@ -531,11 +537,12 @@ var BestDealHelper = {
 
     reorderBuildings: function (/** @type {Building[]} */ buildings) {
         let buildings_order = buildings.map(e => e.l.id);
-        let building_order_on_page = [...document.querySelector("#products").children].map(e => e.id).filter(e => e !== "storeBulk");
+        let building_order_on_page = [...document.querySelectorAll(".product:not(.toggledOff)")].map(e => e.id).filter(e => e !== "storeBulk");
 
         if (BestDealHelper.arrayCommonInTheSameOrder(buildings_order, building_order_on_page))
             return;
 
+        // console.log(buildings[0], buildings_order, building_order_on_page);
         // Only sort when the order is different
         var product = document.querySelector("#products");
         buildings.reverse().forEach((building) => {
@@ -575,7 +582,11 @@ var BestDealHelper = {
         // Sort upgrades & buildings (or leave them as default)
         if (BestDealHelper.config.enableSort) {
             var sortFunction = function ( /** @type {(Building | Upgrade)} */a, /** @type {(Building | Upgrade)} */b) {
-                return b.BestHelper - a.BestHelper || b.BestCpsAcceleration - a.BestCpsAcceleration;
+                return (
+                    +!BestDealHelper.isIgnored(b) - +!BestDealHelper.isIgnored(a) ||
+                    b.BestHelper - a.BestHelper ||
+                    b.BestCpsAcceleration - a.BestCpsAcceleration
+                );
             };
             upgrades.sort(sortFunction);
             buildings.sort(sortFunction);
@@ -590,9 +601,11 @@ var BestDealHelper = {
         <div class="listing">
             ${BestDealHelper.button("enableSort", "Sort Buildings and Upgrades ON", "Sort Buildings and Upgrades OFF")}
         </div> <div class="listing">
-            ${BestDealHelper.button("ignoreWizardTower", "Ignore Wizard Tower ON", "Ignore Wizard Tower OFF")}
+            ${BestDealHelper.button("sortGrandmapocalypse", 'Sort upgrades that cause Grandmapocalypse', 'Ignore upgrades that cause Grandmapocalypse')}
         </div> <div class="listing">
-            ${BestDealHelper.button("ignoreIdleverse", "Ignore Idleverse ON", "Ignore Idleverse OFF")}
+            ${BestDealHelper.button("sortWizardTower", "Sort Wizard Tower", "Ignore Wizard Tower")}
+        </div> <div class="listing">
+            ${BestDealHelper.button("sortIdleverse", "Sort Idleverse", "Ignore Idleverse")}
         </div> <div class="listing">
             ${BestDealHelper.colorPicker("color0", "Best deal color")}
         </div> <div class="listing">

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2043.10] - 2022.04.24
 ### New
 - Add month as waiting time unit
+- Add switch for Sort/Ignore upgrades that cause Grandmapocalypse
 ### Change
 - Refactoring code, break down main function
 
