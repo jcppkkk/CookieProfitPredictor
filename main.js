@@ -406,13 +406,14 @@ var BestDealHelper = {
 
         const seconds = waitCookie / Game.cookiesPs;
         let a = [
-            Math.floor(seconds / 60 / 60 / 24 / 365) + "y",
-            Math.floor(seconds / 60 / 60 / 24 % 365) + "d",
-            Math.floor(seconds / 60 / 60 % 24) + "h",
-            Math.floor(seconds / 60 % 60) + "m",
-            Math.floor(seconds % 60) + "s"];
-        while (a.length && ["0y", "0d", "0m", "0h"].includes(a[0])) a.shift();
-        if (Math.floor(seconds / 60 / 60 / 24 / 365) > 100) {
+            Math.floor(seconds / 60 / 60 / 24 / 30 / 12) + "y",
+            Math.floor(seconds / 60 / 60 / 24 / 30 % 12) + "m",
+            Math.floor(seconds / 60 / 60 / 24 % 30) + "d",
+            Math.floor(seconds / 60 / 60 % 24) + "H",
+            Math.floor(seconds / 60 % 60) + "M",
+            Math.floor(seconds % 60) + "S"];
+        while (a.length && ["0y", "0m", "0d", "0H", "0M"].includes(a[0])) a.shift();
+        if (Math.floor(seconds / 60 / 60 / 24 / 30 / 12) > 100) {
             return ">100y";
         } else {
             return a.slice(0, 2).join();
