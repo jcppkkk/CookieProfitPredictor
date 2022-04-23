@@ -515,7 +515,6 @@ var BestDealHelper = {
         if (BestDealHelper.arrayCommonInTheSameOrder(upgrades_order, upgrades_order_on_page))
             return;
 
-        console.log(upgrades_order, upgrades_order_on_page);
         // Only sort when the order is different
         let divTechUpgrades = document.querySelector("#techUpgrades");
         let divUpgrades = document.querySelector("#upgrades");
@@ -537,7 +536,6 @@ var BestDealHelper = {
         if (BestDealHelper.arrayCommonInTheSameOrder(buildings_order, building_order_on_page))
             return;
 
-        console.log(buildings_order, building_order_on_page);
         // Only sort when the order is different
         var product = document.querySelector("#products");
         buildings.reverse().forEach((building) => {
