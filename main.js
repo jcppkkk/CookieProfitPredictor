@@ -24,42 +24,51 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
 /**
  * @typedef Building
  * @type {Object}
- * @property {number} price
- * @property {number} amount
- * @property {number} bought
- * @property {Upgrade[]} tieredUpgrades
- * @property {number} BestChainAmount
- * @property {number} locked
- * @property {number} id
- * @property {function} getPrice
  * @property {Element} l
- * @property {number} timeToTargetCookie
- * @property {number} SingleCps
+ * @property {function} isVaulted
+ * @property {function} getPrice
+ * @property {number} amount
+ * @property {number} BestChainAmount
  * @property {number} BestCps
+ * @property {number} BestCpsAcceleration
  * @property {number} BestHelper
  * @property {number} BestWaitTime
- * @property {number} BestCpsAcceleration
+ * @property {number} bought
+ * @property {number} id
+ * @property {number} locked
+ * @property {number} price
+ * @property {number} SingleCps
+ * @property {number} timeToTargetCookie
+ * @property {string} name
+ * @property {string} type
  * @property {string} pool
  * @property {string} waitingTime
+ * @property {Upgrade[]} tieredUpgrades
  */
 /**
  * @typedef Upgrade
  * @type {Object}
- * @property {Object} Idleverse
+ * @property {Element} l
+ * @property {function} isVaulted
+ * @property {function} getPrice
  * @property {function} isVaulted
  * @property {number} amount
- * @property {number} bought
- * @property {number} tier
- * @property {function} getPrice
- * @property {Element} l
- * @property {number} timeToTargetCookie
- * @property {number} SingleCps
+ * @property {number} BestChainAmount
  * @property {number} BestCps
+ * @property {number} BestCpsAcceleration
  * @property {number} BestHelper
  * @property {number} BestWaitTime
- * @property {number} BestCpsAcceleration
+ * @property {number} bought
+ * @property {number} SingleCps
+ * @property {number} tier
+ * @property {number} timeToTargetCookie
+ * @property {Object} Idleverse
+ * @property {string} name
+ * @property {string} type
  * @property {string} pool
  * @property {string} waitingTime
+ * @property {Upgrade[]} tieredUpgrades // not actually used
+ * @property {Building} buildingTie
  */
 /**
  * @typedef Tier
@@ -143,7 +152,7 @@ var BestDealHelper = {
 
     init: function () {
         // iterable Updates
-        const buildMap = obj => Object.keys(obj).reduce((map, key) => map.set(key, obj[key]), new Map());
+        const buildMap = (/** @type {Upgrade[]} */ obj) => Object.keys(obj).reduce((map, key) => map.set(key, obj[key]), new Map());
         BestDealHelper.Upgrades = buildMap(Game.UpgradesById);
         // UI: add menu
         Game.customOptionsMenu.push(BestDealHelper.addOptionsMenu);
@@ -172,10 +181,10 @@ var BestDealHelper = {
         BestDealHelper.isLoaded = true;
     },
 
-    config: { ...BestDealHelper_default_config},
-    last_config: { ...BestDealHelper_default_config},
+    config: { ...BestDealHelper_default_config },
+    last_config: { ...BestDealHelper_default_config },
 
-    load: function (str) {
+    load: function (/** @type {string} */ str) {
         const config = JSON.parse(str);
         for (const c in config) BestDealHelper.config[c] = config[c];
         BestDealHelper.sortDeals();
@@ -194,24 +203,33 @@ var BestDealHelper = {
             (document.querySelector("#upgrade0") && !document.querySelector("#upgradeAcc0"))
         ) {
             BestDealHelper.sortDeals();
-            BestDealHelper.last_config = { ...BestDealHelper.config};
+            BestDealHelper.last_config = { ...BestDealHelper.config };
             BestDealHelper.last_cps = Game.cookiesPs;
             BestDealHelper.loopCount = 0;
         }
     },
 
-    insertAfter: function (newNode, referenceNode) {
+    insertAfter: function (
+        /** @type {any} */ newNode,
+        /** @type {any} */ referenceNode
+    ) {
         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
     },
 
-    calcCookieTimesCost: function (price, oldCps, cookies, waitTime, simCost) {
+    calcCookieTimesCost: function (
+        /** @type {number} */ price,
+        /** @type {number} */ oldCps,
+        /** @type {number} */ cookies,
+        /** @type {number} */ waitTime,
+        /** @type {any} */ simCost
+    ) {
         if (cookies >= price)
             return [cookies - price, waitTime, simCost + price];
         else
             return [0, waitTime + (price - cookies) / oldCps, simCost + cookies];
     },
 
-    calcBestCpsAcceleration: function (me) {
+    updateBestCpsAcceleration: function (/** @type {(Building|Upgrade)} */ me) {
         // Treat Grandmapocalypse upgrade as 0% temporary
         if (["Milk selector", "One mind", "Communal brainsweep", "Elder pact"].includes(me.name) ||
             (BestDealHelper.config.ignoreWizardTower && me === Game.Objects["Wizard tower"]) ||
@@ -228,7 +246,7 @@ var BestDealHelper = {
         let nextTierUpgrade;
         if (me.type !== "upgrade") {
             // for buildings, find amount to unlock next tier
-            const lockedTiers = me.tieredUpgrades.filter(e => Game.Tiers[e.tier].unlock !== -1 && e.buildingTie.bought < Game.Tiers[e.tier].unlock);
+            const lockedTiers = me.tieredUpgrades.filter((e) => Game.Tiers[e.tier].unlock !== -1 && e.buildingTie.bought < Game.Tiers[e.tier].unlock);
             if (lockedTiers.length) {
                 const amountToUnlockTier = Game.Tiers[lockedTiers[0].tier].unlock - me.bought;
                 if (amountToUnlockTier < 15) {
@@ -316,9 +334,10 @@ var BestDealHelper = {
 
     /**
      * If the best BestCpsAcceleration is not affordable, search pre-deals to help us get the best deal quicker.
-     * @param {(Building|Upgrade)[]} all
      */
-    findHelper: function (all) {
+    findHelper: function (
+        /** @type {(Building | Upgrade)[]} */ all
+    ) {
         all.forEach(e => e.BestHelper = 0);
 
         let i = 0;
@@ -346,7 +365,9 @@ var BestDealHelper = {
         }
     },
 
-    rainbow: function (span) {
+    rainbow: function (
+        /** @type {HTMLSpanElement} */ span
+    ) {
         let text = span.innerText;
         span.innerHTML = "";
         for (let i = 0; i < text.length; i++) {
@@ -356,15 +377,36 @@ var BestDealHelper = {
             span.appendChild(charElem);
         }
     },
+    calcWaitingTime: function (
+        /** @type {(Building|Upgrade)}*/ me
+    ) {
+        let waitCookie = me.getPrice() - Game.cookies;
+        if (waitCookie < 0) return "";
+
+        const seconds = waitCookie / Game.cookiesPs;
+        let a = [
+            Math.floor(seconds / 60 / 60 / 24 / 365) + "y",
+            Math.floor(seconds / 60 / 60 / 24 % 365) + "d",
+            Math.floor(seconds / 60 / 60 % 24) + "h",
+            Math.floor(seconds / 60 % 60) + "m",
+            Math.floor(seconds % 60) + "s"];
+        while (a.length && ["0y", "0d", "0m", "0h"].includes(a[0])) a.shift();
+        if (Math.floor(seconds / 60 / 60 / 24 / 365) > 100) {
+            return ">100y";
+        } else {
+            return a.slice(0, 2).join();
+        }
+    },
 
     sortDeals: function () {
+        // 2 locked buildings will shows on list, so they are included in the sort, too.
         let enabledBuildings = Game.ObjectsById.map(e => +!e.locked).reduce((a, b) => a + b) + 2;
         let buildings = [...Game.ObjectsById].filter(o => o.id < enabledBuildings);
         let upgrades = [...Game.UpgradesInStore];
         let all = [...buildings, ...upgrades];
 
         // Calculate BestCpsAcceleration
-        for (let me of all) BestDealHelper.calcBestCpsAcceleration(me);
+        for (let me of all) BestDealHelper.updateBestCpsAcceleration(me);
         // Sorting by BestCpsAcceleration
         all.sort((a, b) => b.BestCpsAcceleration - a.BestCpsAcceleration);
 
@@ -380,6 +422,7 @@ var BestDealHelper = {
             [BestDealHelper.config.color1, cpsAccList[1]],
             [BestDealHelper.config.color0, cpsAccList[0]],
         ].filter(e => e[1] !== undefined);
+
         // @ts-ignore
         let color = chroma.scale(colorGroups.map(e => e[0])).mode("lab").domain(colorGroups.map(e => e[1]));
 
@@ -389,31 +432,13 @@ var BestDealHelper = {
         const avg = allAcc.reduce((a, b) => a + b, 0) / allAcc.length;
 
         // Calculate waiting times
-        all.forEach(function (me) {
-            me.waitingTime = "";
-            let waitCookie = me.getPrice() - Game.cookies;
-            if (waitCookie < 0) return;
-
-            const seconds = waitCookie / Game.cookiesPs;
-            let a = [
-                Math.floor(seconds / 60 / 60 / 24 / 365) + "y",
-                Math.floor(seconds / 60 / 60 / 24 % 365) + "d",
-                Math.floor(seconds / 60 / 60 % 24) + "h",
-                Math.floor(seconds / 60 % 60) + "m",
-                Math.floor(seconds % 60) + "s"];
-            while (a.length && ["0y", "0d", "0m", "0h"].includes(a[0])) a.shift();
-            if (Math.floor(seconds / 60 / 60 / 24 / 365) > 100) {
-                me.waitingTime = ">100y";
-            } else {
-                me.waitingTime = a.slice(0, 2).join();
-            }
-        });
+        all.forEach(me => me.waitingTime = BestDealHelper.calcWaitingTime(me));
 
         // Notation for upgrades
         for (const i in upgrades) {
             let me = upgrades[i];
             me.l = document.querySelector("#upgrade" + i);
-            /** @type {HTMLElement} */
+            /** @type {HTMLSpanElement} */
             let span = document.querySelector("#upgradeAcc" + i);
             if (!span) {
                 span = document.createElement("span");
@@ -443,7 +468,7 @@ var BestDealHelper = {
         // Notation for buildings
         for (const i in buildings) {
             let me = buildings[i];
-            /** @type {HTMLElement} */
+            /** @type {HTMLSpanElement} */
             let span = document.querySelector("#productAcc" + me.id);
             if (!span) {
                 span = document.createElement("span");
@@ -547,15 +572,24 @@ var BestDealHelper = {
 
         CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
     },
-    
-    button: function (config, textOn, textOff) {
+
+    button: function (
+        /** @type {string | number} */ config,
+        /** @type {any} */ textOn,
+        /** @type {any} */ textOff
+    ) {
         const name = `BestDealHelper${config}Button`;
         const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${textOn}', '${textOff}');`;
         const value = BestDealHelper.config[config];
         return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? textOn : textOff}</a>`;
     },
 
-    buttonCallback: function (config, button, textOn, textOff) {
+    buttonCallback: function (
+        /** @type {string | number} */ config,
+        /** @type {any} */ button,
+        /** @type {any} */ textOn,
+        /** @type {any} */ textOff
+    ) {
         const value = !BestDealHelper.config[config];
         BestDealHelper.config[config] = value;
         l(button).innerHTML = value ? textOn : textOff;
@@ -563,16 +597,22 @@ var BestDealHelper = {
         PlaySound("snd/tick.mp3");
     },
 
-    colorPicker: function (/** @type {string} */ config, /** @type {string} */ text) {
+    colorPicker: function (
+        /** @type {string} */ config,
+        /** @type {string} */ text
+    ) {
         const name = `BestDealHelper${config}Picker`;
         const callback = `BestDealHelper.colorPickerCallback('${config}', '${name}');`;
         const defaultColor = BestDealHelper_default_config[config];
         const reset = `BestDealHelper.config.${config}='${defaultColor}';l('${name}').value='${defaultColor}';`;
         const value = BestDealHelper.config[config];
-        return `<input type="color" id="${name}" value=${value} oninput="${callback}"><label>${text}</label></a><a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
+        return `<input type="color" id="${name}" value=${value} oninput="${callback}"><label>${text}</label><a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
     },
 
-    colorPickerCallback: function (/** @type {string} */ config, /** @type {string} */ pickerID) {
+    colorPickerCallback: function (
+        /** @type {string} */ config,
+        /** @type {string} */ pickerID
+    ) {
         const value = l(pickerID).value;
         BestDealHelper.config[config] = value;
     }
@@ -583,9 +623,6 @@ const methods = Object.getOwnPropertyNames(BestDealHelper).filter(
     m => typeof BestDealHelper[m] === "function"
 );
 for (var func of methods) {
-    /**
-     * @typedef {string} func
-     */
     BestDealHelper[func] = BestDealHelper[func].bind(BestDealHelper);
 
 }
