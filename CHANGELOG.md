@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2048.01] - 2022.06.03
+### Fix
+- Freeze at Game version 2.048
+- 
 ## [2043.10] - 2022.04.24
 ### New
 - Add month as waiting time unit

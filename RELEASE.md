@@ -1,6 +1,3 @@
-## [2043.10] - 2022.04.24
-### New
-- Add month as waiting time unit
-- Add switch for Sort/Ignore upgrades that cause Grandmapocalypse
-### Change
-- Refactoring code, break down main function
+## [2048.01] - 2022.06.03
+### Fix
+- Freeze at Game version 2.048

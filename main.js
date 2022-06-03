@@ -252,7 +252,7 @@ var BestDealHelper = {
         let nextTierUpgrade;
         if (me.type !== "upgrade") {
             // for buildings, find amount to unlock next tier
-            const lockedTiers = me.tieredUpgrades.filter((e) => Game.Tiers[e.tier].unlock !== -1 && e.buildingTie.bought < Game.Tiers[e.tier].unlock);
+            const lockedTiers = Object.values(me.tieredUpgrades).filter((e) => Game.Tiers[e.tier].unlock !== -1 && e.buildingTie.bought < Game.Tiers[e.tier].unlock);
             if (lockedTiers.length) {
                 const amountToUnlockTier = Game.Tiers[lockedTiers[0].tier].unlock - me.bought;
                 if (amountToUnlockTier < 15) {
