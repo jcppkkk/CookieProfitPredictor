@@ -1,3 +1,3 @@
-## [2048.01] - 2022.06.03
+## [2048.02] - 2022.07.01
 ### Fix
-- Freeze at Game version 2.048
+- The calculation of rainbow deals does not take into account multiple purchases
