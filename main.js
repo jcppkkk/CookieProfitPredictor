@@ -153,8 +153,8 @@ var BestDealHelper_default_config = {
     color0: "#00ffff",
     color1: "#00ff00",
     color7: "#ffd939",
-    color15: "#ff0000",
-    colorLast: "#d82aff",
+    color15: "#ff4d4d",
+    colorLast: "#de4dff",
 };
 
 var BestDealHelper = {
@@ -492,6 +492,7 @@ var BestDealHelper = {
                 span.style.left = "-3px";
                 span.style.textShadow = "0px 2px 6px #000, 0px 1px 1px #000";
                 span.style.transform = "scale(0.8,1)";
+                span.style.zIndex = "20";
                 me.l.appendChild(span);
             }
 
@@ -517,6 +518,7 @@ var BestDealHelper = {
                 span.id = "productAcc" + me.id;
                 span.style.fontWeight = "bolder";
                 span.style.display = "block";
+                span.style.filter = "contrast(1.5)";
                 BestDealHelper.insertAfter(span, l("productPrice" + me.id));
             }
 
