@@ -1,3 +1,4 @@
-## [2048.02] - 2022.07.01
-### Fix
-- The calculation of rainbow deals does not take into account multiple purchases
+## [2048.03] - 2022.08.08
+### Add
+- New config to set Backing target (cookie in seconds)
+- Increase text contrast

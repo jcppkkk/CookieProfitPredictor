@@ -132,9 +132,10 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
 /**
  * @typedef SimulateStatus
  * @type {Object}
+ * @property {number} originalCookies
  * @property {number} currentCookies
+ * @property {number} paidCookies
  * @property {number} waitTime
- * @property {number} costCookies
  */
 
 /** @type {CCSE} */
@@ -155,6 +156,8 @@ var BestDealHelper_default_config = {
     color7: "#ffd939",
     color15: "#ff4d4d",
     colorLast: "#de4dff",
+    isBanking: 0,
+    bankingSeconds: 0,
 };
 
 var BestDealHelper = {
@@ -221,6 +224,7 @@ var BestDealHelper = {
         BestDealHelper.loopCount++;
         if (BestDealHelper.loopCount >= 10 ||
             BestDealHelper.last_cps !== Game.cookiesPs ||
+            (l("upgrade0") && !l("upgradeAcc0")) ||
             JSON.stringify(BestDealHelper.config) !== JSON.stringify(BestDealHelper.last_config) ||
             !document.querySelector("#productAcc0")
         ) {
@@ -243,14 +247,17 @@ var BestDealHelper = {
         /** @type {number} */ oldCps,
         /** @type {SimulateStatus} */ sim
     ) {
-        if (sim.currentCookies >= price) {
-            sim.costCookies += price;
+        const bank = BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * oldCps;
+        if (sim.currentCookies >= (price + bank)) {
+            sim.paidCookies += price;
             sim.currentCookies -= price;
-        }
-        else {
-            sim.waitTime += (price - sim.currentCookies) / oldCps;
-            sim.costCookies += sim.currentCookies;
-            sim.currentCookies -= sim.currentCookies;
+        } else if (sim.currentCookies < (price + bank) && sim.currentCookies >= bank) {
+            sim.waitTime += (price + bank - sim.currentCookies) / oldCps;
+            sim.paidCookies += sim.currentCookies - bank;
+            sim.currentCookies = bank;
+        } else {
+            sim.waitTime += (price + bank - sim.currentCookies) / oldCps;
+            sim.currentCookies = bank;
         }
     },
 
@@ -289,6 +296,16 @@ var BestDealHelper = {
         Game.CalculateGains();
     },
 
+    initSimData: function () {
+        var /** @type {SimulateStatus} */ sim = {
+            originalCookies: Game.cookies,
+            currentCookies: Game.cookies,
+            paidCookies: 0,
+            waitTime: 0,
+        };
+        return sim;
+    },
+
     updateBestCpsAcceleration: function (/** @type {(Building|Upgrade)} */ me) {
         me.BestCpsAcceleration = 0;
         me.BestBuyToAmount = 0;
@@ -298,11 +315,7 @@ var BestDealHelper = {
         if (BestDealHelper.isIgnored(me) || Game.cookies === 0) return;
 
         const oldCps = Game.cookiesPs;
-        let /** @type {SimulateStatus} */ sim = {
-            currentCookies: Game.cookies,
-            waitTime: 0,
-            costCookies: 0,
-        };
+        var /** @type {SimulateStatus} */ sim = BestDealHelper.initSimData();
 
         const save = BestDealHelper.enterSandBox(me);
 
@@ -312,7 +325,7 @@ var BestDealHelper = {
             me.amount++;
             me.bought++;
             Game.CalculateGains();
-            me.BestWaitTime = (sim.waitTime + sim.costCookies / Game.cookiesPs);
+            me.BestWaitTime = sim.waitTime + sim.paidCookies / Game.cookiesPs;
             me.BestCpsAcceleration = (Game.cookiesPs - oldCps) / me.BestWaitTime;
         } else {
             // for buildings, find amount to unlock next tier
@@ -326,12 +339,17 @@ var BestDealHelper = {
                 }
             }
 
-            for (var buy = 1; buy < Infinity; buy++) {
+            for (var buy = 0; buy < 50; buy++) {
                 BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPs, sim);
                 me.amount++;
                 me.bought++;
                 Game.CalculateGains();
-                const waitTime = (sim.waitTime + sim.costCookies / Game.cookiesPs);
+                if (nextTierUpgrade && me.amount == amountToUnlockTier) {
+                    BestDealHelper.calcCookieTimesCost(nextTierUpgrade.getPrice(), Game.cookiesPs, sim);
+                    nextTierUpgrade.bought = 1;
+                    Game.CalculateGains();
+                }
+                const waitTime = sim.waitTime + sim.paidCookies / Game.cookiesPs;
                 const cpsAcceleration = (Game.cookiesPs - oldCps) / waitTime;
                 if (cpsAcceleration > me.BestCpsAcceleration) {
                     me.BestCpsAcceleration = cpsAcceleration;
@@ -341,16 +359,9 @@ var BestDealHelper = {
                     // if get CpsAcceleration worse & no pending tier upgrade, stop trying further
                     break;
                 }
-
-                if (nextTierUpgrade && me.amount == amountToUnlockTier) {
-                    BestDealHelper.calcCookieTimesCost(nextTierUpgrade.getPrice(), Game.cookiesPs, sim);
-                    nextTierUpgrade.bought++;
-                    Game.CalculateGains();
-                }
             }
             if (nextTierUpgrade) nextTierUpgrade.bought = 0;
         }
-
         BestDealHelper.leaveSandBox(save);
     },
 
@@ -377,11 +388,7 @@ var BestDealHelper = {
             for (let me of helpers) {
                 const save = BestDealHelper.enterSandBox(me);
 
-                let /** @type {SimulateStatus} */ sim = {
-                    currentCookies: Game.cookies,
-                    waitTime: 0,
-                    costCookies: 0,
-                };
+                let /** @type {SimulateStatus} */ sim = BestDealHelper.initSimData();
 
                 me.timeToTargetCookie = Infinity;
                 for (var buy = 1; buy < Infinity; buy++) {
@@ -452,7 +459,8 @@ var BestDealHelper = {
     calcWaitingTime: function (
         /** @type {(Building|Upgrade)}*/ me
     ) {
-        let waitCookie = me.getPrice() - Game.cookies;
+        const bank = BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * Game.cookiesPs;
+        let waitCookie = me.getPrice() + bank - Game.cookies;
         if (waitCookie < 0) return "";
 
         const seconds = waitCookie / Game.cookiesPs;
@@ -538,10 +546,10 @@ var BestDealHelper = {
                 span.textContent = " 💹" + value + "%";
                 if (me.BestHelperOrder) {
                     if (me.BestHelperAmount > me.amount + 1) {
-                        span.textContent += " (buy to " + me.BestHelperAmount + ")";
+                        span.textContent += " (to " + me.BestHelperAmount + ")";
                     }
                 } else if (me.BestBuyToAmount > me.amount + 1) {
-                    span.textContent += " (buy to " + me.BestBuyToAmount + ")";
+                    span.textContent += " (to " + me.BestBuyToAmount + ")";
                 }
                 if (me.waitingTime) span.textContent += " ⏳" + me.waitingTime;
                 if (me.BestHelperOrder) {
@@ -593,7 +601,6 @@ var BestDealHelper = {
         if (BestDealHelper.arrayCommonInTheSameOrder(buildings_order, building_order_on_page))
             return;
 
-        // console.log(buildings[0], buildings_order, building_order_on_page);
         // Only sort when the order is different
         var product = document.querySelector("#products");
         buildings.reverse().forEach((building) => {
@@ -629,6 +636,13 @@ var BestDealHelper = {
 
         // Notation for upgrades & buildings
         all.forEach(me => BestDealHelper.updateNotation(me, avg));
+        // if there is only non-acc upgrade(s), add empty element placeholder to avoid logicLoop trigger
+        if (!l("upgradeAcc0")) {
+            let span = document.createElement("span");
+            span.id = "upgradeAcc0";
+            l("upgrade0").appendChild(span);
+        }
+
 
         // Sort upgrades & buildings (or leave them as default)
         if (BestDealHelper.config.enableSort) {
@@ -651,67 +665,109 @@ var BestDealHelper = {
         const body = `
         <div class="listing">
             ${BestDealHelper.button("enableSort", "Sort Buildings and Upgrades ON", "Sort Buildings and Upgrades OFF")}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
             ${BestDealHelper.button("sortGrandmapocalypse", 'Sort upgrades that cause Grandmapocalypse', 'Ignore upgrades that cause Grandmapocalypse')}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
             ${BestDealHelper.button("sortWizardTower", "Sort Wizard Tower", "Ignore Wizard Tower")}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
             ${BestDealHelper.button("sortIdleverse", "Sort Idleverse", "Ignore Idleverse")}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
+            ${BestDealHelper.button("isBanking", "Banking Cookies ON", "Banking Cookies OFF")}
+            ${BestDealHelper.numberInput("bankingSeconds")} seconds of cookies
+        </div>
+        <div class="listing">
             ${BestDealHelper.colorPicker("color0", "Best deal color")}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
             ${BestDealHelper.colorPicker("color1", "2nd deal color")}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
             ${BestDealHelper.colorPicker("color7", "8st deal color")}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
             ${BestDealHelper.colorPicker("color15", "16st deal color")}
-        </div> <div class="listing">
+        </div>
+        <div class="listing">
             ${BestDealHelper.colorPicker("colorLast", "Worst deal color")}
         </div>`;
 
         CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
     },
 
-    button: function (
-        /** @type {string | number} */ config,
-        /** @type {any} */ textOn,
-        /** @type {any} */ textOff
-    ) {
+    /**
+     * 
+     * @param {string} config 
+     * @param {string} textOn 
+     * @param {string} textOff 
+     * @returns 
+     */
+    button: function (config, textOn, textOff) {
         const name = `BestDealHelper${config}Button`;
         const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${textOn}', '${textOff}');`;
         const value = BestDealHelper.config[config];
         return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? textOn : textOff}</a>`;
     },
 
-    buttonCallback: function (
-        /** @type {string | number} */ config,
-        /** @type {any} */ button,
-        /** @type {any} */ textOn,
-        /** @type {any} */ textOff
-    ) {
+    /**
+     * @param {string} config
+     * @param {string} buttonID
+     * @param {string} textOn
+     * @param {string} textOff
+     */
+    buttonCallback: function (config, buttonID, textOn, textOff) {
         const value = !BestDealHelper.config[config];
         BestDealHelper.config[config] = value;
-        l(button).innerHTML = value ? textOn : textOff;
-        l(button).className = value ? "option" : "option off";
+        l(buttonID).innerHTML = value ? textOn : textOff;
+        l(buttonID).className = value ? "option" : "option off";
         PlaySound("snd/tick.mp3");
     },
 
-    colorPicker: function (
-        /** @type {string} */ config,
-        /** @type {string} */ text
-    ) {
-        const name = `BestDealHelper${config}Picker`;
-        const callback = `BestDealHelper.colorPickerCallback('${config}', '${name}');`;
-        const defaultColor = BestDealHelper_default_config[config];
-        const reset = `BestDealHelper.config.${config}='${defaultColor}';l('${name}').value='${defaultColor}';`;
+    /**
+     * 
+     * @param {string} config 
+     * @returns {string}
+     */
+    numberInput: function (config) {
+        const textID = `BestDealHelper${config}Input`;
+        const callback = `BestDealHelper.textInputCallback('${config}', '${textID}');`;
         const value = BestDealHelper.config[config];
-        return `<input type="color" id="${name}" value=${value} oninput="${callback}"><label>${text}</label><a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
+        return `<input type="number" min="0" style="width:4em;" id="${textID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
     },
 
-    colorPickerCallback: function (
-        /** @type {string} */ config,
-        /** @type {string} */ pickerID
-    ) {
+    /**
+     * @param {string} config
+     * @param {string} textID
+     */
+    textInputCallback: function (config, textID) {
+        l(textID).value = l(textID).value.replace(/[^0-9]/g, "");
+        const value = l(textID).value;
+        BestDealHelper.config[config] = parseInt(value);
+    },
+
+    /**
+     * 
+     * @param {string} config 
+     * @param {string} text 
+     * @returns {string}
+     */
+    colorPicker: function (config, text) {
+        const pickerID = `BestDealHelper${config}Picker`;
+        const callback = `BestDealHelper.colorPickerCallback('${config}', '${pickerID}');`;
+        const defaultColor = BestDealHelper_default_config[config];
+        const reset = `BestDealHelper.config.${config}='${defaultColor}';l('${pickerID}').value='${defaultColor}';`;
+        const value = BestDealHelper.config[config];
+        return `<input type="color" id="${pickerID}" value=${value} oninput="${callback}"><label>${text}</label><a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
+    },
+
+    /** 
+     * @param {string} config 
+     * @param {string} pickerID
+     */
+    colorPickerCallback: function (config, pickerID) {
         const value = l(pickerID).value;
         BestDealHelper.config[config] = value;
     }
