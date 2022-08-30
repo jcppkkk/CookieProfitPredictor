@@ -146,6 +146,7 @@ var App;
 var Game;
 
 LoadScript(App.mods.BestDealHelper.dir + "/chroma.min.js");
+
 var BestDealHelper_default_config = {
     enableSort: 1,
     sortGrandmapocalypse: 1,
@@ -158,6 +159,7 @@ var BestDealHelper_default_config = {
     colorLast: "#de4dff",
     isBanking: 0,
     bankingSeconds: 0,
+    updateMS: 1000,
 };
 
 var BestDealHelper = {
@@ -192,13 +194,13 @@ var BestDealHelper = {
 
         // Hook: wrap Game.RebuildUpgrades
         var OriginalRebuildUpgrades = Game.RebuildUpgrades;
-        Game.RebuildUpgrades = function () { OriginalRebuildUpgrades(); BestDealHelper.logicLoop(); };
+        Game.RebuildUpgrades = function () { OriginalRebuildUpgrades(); BestDealHelper.mainLoop(); };
         // Hook: wrap Game.RefreshStore
         var OriginalRefreshStore = Game.RefreshStore;
-        Game.RefreshStore = function () { OriginalRefreshStore(); BestDealHelper.logicLoop(); };
+        Game.RefreshStore = function () { OriginalRefreshStore(); BestDealHelper.mainLoop(); };
         // Check changes from time to time
         setTimeout(function () {
-            setInterval(BestDealHelper.logicLoop, 100);
+            setTimeout(BestDealHelper.tick, BestDealHelper.config.updateMS / 10);
         }, 500);
         BestDealHelper.isLoaded = true;
     },
@@ -220,13 +222,18 @@ var BestDealHelper = {
         return JSON.stringify(BestDealHelper.config);
     },
 
-    logicLoop: function () {
+    tick: function () {
         BestDealHelper.loopCount++;
+        BestDealHelper.mainLoop();
+        setTimeout(BestDealHelper.tick, BestDealHelper.config.updateMS / 10);
+    },
+
+    mainLoop: function () {
         if (BestDealHelper.loopCount >= 10 ||
             BestDealHelper.last_cps !== Game.cookiesPs ||
+            !document.querySelector("#productAcc0") ||
             (l("upgrade0") && !l("upgradeAcc0")) ||
-            JSON.stringify(BestDealHelper.config) !== JSON.stringify(BestDealHelper.last_config) ||
-            !document.querySelector("#productAcc0")
+            JSON.stringify(BestDealHelper.config) !== JSON.stringify(BestDealHelper.last_config)
         ) {
             BestDealHelper.updateUI();
             BestDealHelper.last_config = { ...BestDealHelper.config };
@@ -536,10 +543,9 @@ var BestDealHelper = {
             } else {
                 // Auto increase decimalPlaces for small number
                 let value;
-                for (let i = 0; i < 20; i++) {
+                for (let i = 1; i < 20; i++) {
                     value = Beautify(me.BestCpsAcceleration * 100 / avgAcc, i);
                     if (value !== "0") {
-                        value = Beautify(me.BestCpsAcceleration * 100 / avgAcc, i + 1);
                         break;
                     }
                 }
@@ -636,7 +642,7 @@ var BestDealHelper = {
 
         // Notation for upgrades & buildings
         all.forEach(me => BestDealHelper.updateNotation(me, avg));
-        // if there is only non-acc upgrade(s), add empty element placeholder to avoid logicLoop trigger
+        // if there is only non-acc upgrade(s), add empty element placeholder to avoid mainLoop trigger
         if (!l("upgradeAcc0")) {
             let span = document.createElement("span");
             span.id = "upgradeAcc0";
@@ -678,6 +684,9 @@ var BestDealHelper = {
         <div class="listing">
             ${BestDealHelper.button("isBanking", "Banking Cookies ON", "Banking Cookies OFF")}
             ${BestDealHelper.numberInput("bankingSeconds")} seconds of cookies
+        </div>
+        <div class="listing">
+            Update Interval: ${BestDealHelper.intervalInput("updateMS")} millisecond (increase it if game lags)
         </div>
         <div class="listing">
             ${BestDealHelper.colorPicker("color0", "Best deal color")}
@@ -736,6 +745,20 @@ var BestDealHelper = {
         const callback = `BestDealHelper.textInputCallback('${config}', '${textID}');`;
         const value = BestDealHelper.config[config];
         return `<input type="number" min="0" style="width:4em;" id="${textID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
+    },
+
+    /**
+     * 
+     * @param {string} config
+     * @param {number} min
+     * @param {number} step
+     * @returns {string}
+     */
+    intervalInput: function (config, min = 500, max = 60000, step = 100) {
+        const textID = `BestDealHelper${config}Input`;
+        const callback = `BestDealHelper.textInputCallback('${config}', '${textID}');`;
+        const value = BestDealHelper.config[config];
+        return `<input type="number" min="${min}" max="${max}" step="${step}" style="width:4em;font-size:2em;" id="${textID}" value="${value}" oninput="${callback}" onkeydown="return false">`;
     },
 
     /**

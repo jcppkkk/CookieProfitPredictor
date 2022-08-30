@@ -1,4 +1,3 @@
-## [2048.03] - 2022.08.08
+## [2048.04] - 2022.08.30
 ### Add
-- New config to set Backing target (cookie in seconds)
-- Increase text contrast
+- Changeable update interval in milliseconds
