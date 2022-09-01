@@ -479,8 +479,8 @@ var BestDealHelper = {
             Math.floor(seconds / 60 % 60) + "M",
             Math.floor(seconds % 60) + "S"];
         while (a.length && ["0y", "0m", "0d", "0H", "0M"].includes(a[0])) a.shift();
-        if (Math.floor(seconds / 60 / 60 / 24 / 30 / 12) > 100) {
-            return ">100y";
+        if (Math.floor(seconds / 60 / 60 / 24 / 30 / 12) > 1000) {
+            return ">1000y";
         } else {
             return a.slice(0, 2).join();
         }
@@ -670,38 +670,38 @@ var BestDealHelper = {
     addOptionsMenu: function () {
         const body = `
         <div class="listing">
-            ${BestDealHelper.button("enableSort", "Sort Buildings and Upgrades ON", "Sort Buildings and Upgrades OFF")}
+            ${BestDealHelper.button("enableSort", "Sort by best deal ON", "Sort by best deal OFF")}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("sortGrandmapocalypse", 'Sort upgrades that cause Grandmapocalypse', 'Ignore upgrades that cause Grandmapocalypse')}
+            ${BestDealHelper.button("sortGrandmapocalypse", 'Sort grandmapocalypse ON', 'Sort grandmapocalypse OFF')}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("sortWizardTower", "Sort Wizard Tower", "Ignore Wizard Tower")}
+            ${BestDealHelper.button("sortWizardTower", "Sort wizard tower ON", "Sort wizard tower OFF")}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("sortIdleverse", "Sort Idleverse", "Ignore Idleverse")}
+            ${BestDealHelper.button("sortIdleverse", "Sort idleverse ON", "Sort idleverse OFF")}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("isBanking", "Banking Cookies ON", "Banking Cookies OFF")}
-            ${BestDealHelper.numberInput("bankingSeconds")} seconds of cookies
+            ${BestDealHelper.button("isBanking", "Banking cookies ON", "Banking cookies OFF")}
+            ${BestDealHelper.numberInput("bankingSeconds")}<label>(seconds of cookies. 6000 without lucky upgrade; 42000 with luck upgrade)</label>
         </div>
         <div class="listing">
-            Update Interval: ${BestDealHelper.intervalInput("updateMS")} millisecond (increase it if game lags)
+            ${BestDealHelper.intervalInput("updateMS", "Update Interval(ms)")}<label>(increase it if game lags)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color0", "Best deal color")}
+            ${BestDealHelper.colorPicker("color0")}<label>(best deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color1", "2nd deal color")}
+            ${BestDealHelper.colorPicker("color1")}<label>(2nd deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color7", "8st deal color")}
+            ${BestDealHelper.colorPicker("color7")}<label>(8st deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color15", "16st deal color")}
+            ${BestDealHelper.colorPicker("color15")}<label>(16st deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("colorLast", "Worst deal color")}
+            ${BestDealHelper.colorPicker("colorLast")}<label>(worst deal color)</label>
         </div>`;
 
         CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
@@ -718,7 +718,7 @@ var BestDealHelper = {
         const name = `BestDealHelper${config}Button`;
         const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${textOn}', '${textOff}');`;
         const value = BestDealHelper.config[config];
-        return `<a class="${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? textOn : textOff}</a>`;
+        return `<a class="smallFancyButton prefButton ${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? textOn : textOff}</a>`;
     },
 
     /**
@@ -731,7 +731,7 @@ var BestDealHelper = {
         const value = !BestDealHelper.config[config];
         BestDealHelper.config[config] = value;
         l(buttonID).innerHTML = value ? textOn : textOff;
-        l(buttonID).className = value ? "option" : "option off";
+        l(buttonID).className = `smallFancyButton prefButton ${value ? "option" : "option off"}`;
         PlaySound("snd/tick.mp3");
     },
 
@@ -741,49 +741,54 @@ var BestDealHelper = {
      * @returns {string}
      */
     numberInput: function (config) {
-        const textID = `BestDealHelper${config}Input`;
-        const callback = `BestDealHelper.textInputCallback('${config}', '${textID}');`;
+        const ID = `BestDealHelper${config}Input`;
+        const callback = `BestDealHelper.textInputCallback('${config}', '${ID}');`;
         const value = BestDealHelper.config[config];
-        return `<input type="number" min="0" style="width:4em;" id="${textID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
+        return `<input type="number" min="0" style="width:4em;" id="${ID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
     },
 
     /**
      * 
      * @param {string} config
+     * @param {string} name
      * @param {number} min
      * @param {number} step
      * @returns {string}
      */
-    intervalInput: function (config, min = 500, max = 60000, step = 100) {
-        const textID = `BestDealHelper${config}Input`;
-        const callback = `BestDealHelper.textInputCallback('${config}', '${textID}');`;
+    intervalInput: function (config, name, min = 500, max = 5000, step = 100) {
+        const ID = `BestDealHelper${config}Input`;
+        const callback = `BestDealHelper.textInputCallback('${config}', '${ID}Slider');` +
+            `l('${ID}RightText').innerHTML=l('${ID}Slider').value+'ms';`;
         const value = BestDealHelper.config[config];
-        return `<input type="number" min="${min}" max="${max}" step="${step}" style="width:4em;font-size:2em;" id="${textID}" value="${value}" oninput="${callback}" onkeydown="return false">`;
+        return `<div class="sliderBox">
+            <div id="${ID}" style="float:left;" class="smallFancyButton">${name}</div>
+            <div id="${ID}RightText" style="float:right;" class="smallFancyButton">${value}ms</div>
+            <input id="${ID}Slider" class="slider" style="clear:both;" type="range" min="${min}" max="${max}" step="${step}" value="${value}" onchange="${callback}" oninput="this.onchange();">
+            </div>`;
     },
 
     /**
      * @param {string} config
-     * @param {string} textID
+     * @param {string} ID
      */
-    textInputCallback: function (config, textID) {
-        l(textID).value = l(textID).value.replace(/[^0-9]/g, "");
-        const value = l(textID).value;
+    textInputCallback: function (config, ID) {
+        l(ID).value = l(ID).value.replace(/[^0-9]/g, "");
+        const value = l(ID).value;
         BestDealHelper.config[config] = parseInt(value);
     },
 
     /**
      * 
      * @param {string} config 
-     * @param {string} text 
      * @returns {string}
      */
-    colorPicker: function (config, text) {
+    colorPicker: function (config) {
         const pickerID = `BestDealHelper${config}Picker`;
         const callback = `BestDealHelper.colorPickerCallback('${config}', '${pickerID}');`;
         const defaultColor = BestDealHelper_default_config[config];
         const reset = `BestDealHelper.config.${config}='${defaultColor}';l('${pickerID}').value='${defaultColor}';`;
         const value = BestDealHelper.config[config];
-        return `<input type="color" id="${pickerID}" value=${value} oninput="${callback}"><label>${text}</label><a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
+        return `<input type="color" id="${pickerID}" value=${value} oninput="${callback}"> <a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
     },
 
     /** 

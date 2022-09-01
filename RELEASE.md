@@ -1,3 +1,3 @@
-## [2048.04] - 2022.08.30
-### Add
-- Changeable update interval in milliseconds
+## [2048.05] - 2022.09.02
+### Improve
+- Classic menu theme
