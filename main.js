@@ -24,7 +24,8 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
 /**
  * @typedef Building
  * @type {Object}
- * @property {Element} l
+ * @property {HTMLElement} l
+ * @property {function} buy
  * @property {function} isVaulted
  * @property {function} getPrice
  * @property {number} amount
@@ -47,11 +48,11 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  */
 /**
  * @typedef Upgrade
- * @type {Object}
- * @property {Element} l
+ * @type {object}
+ * @property {HTMLElement} l
+ * @property {function} buy
  * @property {function} isVaulted
  * @property {function} getPrice
- * @property {function} isVaulted
  * @property {number} amount
  * @property {number} BestBuyToAmount
  * @property {number} BestCpsAcceleration
@@ -83,9 +84,11 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {function} registerMod
  * @property {function} Has
  * @property {function} CalculateGains
+ * @property {function} ClickProduct
  * @property {function} RebuildUpgrades
  * @property {function} RefreshStore
  * @property {function} Win
+ * @property {function} Upgrade
  * @property {Object[]} CpsAchievements
  * @property {Object} GrandmaSynergies.buildingTie
  * @property {String[]} GrandmaSynergies
@@ -94,7 +97,7 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {Object.<string,Tier>} Tiers
  * @property {Upgrade[]} UpgradesById
  * @property {Building[]} ObjectsById
- * @property {(Upgrade)[]} UpgradesInStore
+ * @property {Upgrade[]} UpgradesInStore
  * @property {Array} customOptionsMenu
  * @property {Array} Upgrades
  * @property {string} clickStr
@@ -102,8 +105,10 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {number} unbuffedCps
  * @property {number} globalCpsMult
  * @property {number} storedCps
+ * @property {number} buyMode
  * @property {number} cookies
  * @property {number} cookiesPs
+ * @property {number} cookiesPsRaw
  * @property {number} cookiesPsRawHighest
  */
 /**
@@ -194,10 +199,26 @@ var BestDealHelper = {
 
         // Hook: wrap Game.RebuildUpgrades
         var OriginalRebuildUpgrades = Game.RebuildUpgrades;
-        Game.RebuildUpgrades = function () { OriginalRebuildUpgrades(); BestDealHelper.mainLoop(); };
+        Game.RebuildUpgrades = function () {
+            OriginalRebuildUpgrades();
+            BestDealHelper.mainLoop();
+        };
         // Hook: wrap Game.RefreshStore
         var OriginalRefreshStore = Game.RefreshStore;
-        Game.RefreshStore = function () { OriginalRefreshStore(); BestDealHelper.mainLoop(); };
+        Game.RefreshStore = function () {
+            OriginalRefreshStore();
+            BestDealHelper.mainLoop();
+        };
+        // Hook: wrap Game.ClickProduct
+        Game.ClickProduct = function (/** @type {Number} */ what) {
+            if (!Game.ObjectsById[what].waitingTime || Game.buyMode == -1)
+                Game.ObjectsById[what].buy();
+        };
+        Game.Upgrade.prototype.click2 = Game.Upgrade.prototype.click;
+        Game.Upgrade.prototype.click = function (/** @type {any}*/e) {
+            console.log(this.waitingTime);
+            if (!this.waitingTime || !this.BestCpsAcceleration) return this.click2(e);
+        };
         // Check changes from time to time
         setTimeout(function () {
             setTimeout(BestDealHelper.tick, BestDealHelper.config.updateMS / 10);
@@ -321,19 +342,19 @@ var BestDealHelper = {
         // Treat Grandmapocalypse upgrade as 0% temporary
         if (BestDealHelper.isIgnored(me) || Game.cookies === 0) return;
 
-        const oldCps = Game.cookiesPs;
+        const oldCps = Game.cookiesPsRaw;
         var /** @type {SimulateStatus} */ sim = BestDealHelper.initSimData();
 
         const save = BestDealHelper.enterSandBox(me);
 
         if (me.type == "upgrade") {
             // Simulate upgrade
-            BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPs, sim);
+            BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPsRaw, sim);
             me.amount++;
             me.bought++;
             Game.CalculateGains();
-            me.BestWaitTime = sim.waitTime + sim.paidCookies / Game.cookiesPs;
-            me.BestCpsAcceleration = (Game.cookiesPs - oldCps) / me.BestWaitTime;
+            me.BestWaitTime = sim.waitTime + sim.paidCookies / Game.cookiesPsRaw;
+            me.BestCpsAcceleration = (Game.cookiesPsRaw - oldCps) / me.BestWaitTime;
         } else {
             // for buildings, find amount to unlock next tier
             let nextTierUpgrade = null;
@@ -347,17 +368,17 @@ var BestDealHelper = {
             }
 
             for (var buy = 0; buy < 50; buy++) {
-                BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPs, sim);
+                BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPsRaw, sim);
                 me.amount++;
                 me.bought++;
                 Game.CalculateGains();
                 if (nextTierUpgrade && me.amount == amountToUnlockTier) {
-                    BestDealHelper.calcCookieTimesCost(nextTierUpgrade.getPrice(), Game.cookiesPs, sim);
+                    BestDealHelper.calcCookieTimesCost(nextTierUpgrade.getPrice(), Game.cookiesPsRaw, sim);
                     nextTierUpgrade.bought = 1;
                     Game.CalculateGains();
                 }
-                const waitTime = sim.waitTime + sim.paidCookies / Game.cookiesPs;
-                const cpsAcceleration = (Game.cookiesPs - oldCps) / waitTime;
+                const waitTime = sim.waitTime + sim.paidCookies / Game.cookiesPsRaw;
+                const cpsAcceleration = (Game.cookiesPsRaw - oldCps) / waitTime;
                 if (cpsAcceleration > me.BestCpsAcceleration) {
                     me.BestCpsAcceleration = cpsAcceleration;
                     me.BestBuyToAmount = me.amount;
@@ -383,7 +404,7 @@ var BestDealHelper = {
         let target = all[0];
 
         while (target.getPrice() > Game.cookies) {
-            target.timeToTargetCookie = (target.getPrice() - Game.cookies) / Game.cookiesPs;
+            target.timeToTargetCookie = (target.getPrice() - Game.cookies) / Game.cookiesPsRaw;
             /** @type {(Building | Upgrade)[]} */
             let helpers = [];
             for (let e of all) {
@@ -399,13 +420,13 @@ var BestDealHelper = {
 
                 me.timeToTargetCookie = Infinity;
                 for (var buy = 1; buy < Infinity; buy++) {
-                    BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPs, sim);
+                    BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.cookiesPsRaw, sim);
                     me.amount++;
                     me.bought++;
                     Game.CalculateGains();
                     // Calculate time to target with current deal stack
                     let simTarget = Object.assign({}, sim);
-                    BestDealHelper.calcCookieTimesCost(target.getPrice(), Game.cookiesPs, simTarget);
+                    BestDealHelper.calcCookieTimesCost(target.getPrice(), Game.cookiesPsRaw, simTarget);
                     if (simTarget.waitTime >= target.timeToTargetCookie || simTarget.waitTime >= me.timeToTargetCookie) {
                         break;
                     } else {
@@ -466,11 +487,11 @@ var BestDealHelper = {
     calcWaitingTime: function (
         /** @type {(Building|Upgrade)}*/ me
     ) {
-        const bank = BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * Game.cookiesPs;
+        const bank = BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * Game.cookiesPsRaw;
         let waitCookie = me.getPrice() + bank - Game.cookies;
         if (waitCookie < 0) return "";
 
-        const seconds = waitCookie / Game.cookiesPs;
+        const seconds = waitCookie / Game.cookiesPsRaw;
         let a = [
             Math.floor(seconds / 60 / 60 / 24 / 30 / 12) + "y",
             Math.floor(seconds / 60 / 60 / 24 / 30 % 12) + "m",
@@ -516,7 +537,12 @@ var BestDealHelper = {
                 span.textContent = "";
             } else {
                 span.textContent = Beautify(me.BestCpsAcceleration * 100 / avgAcc, 1) + "%";
-                if (me.waitingTime) span.innerHTML = me.waitingTime + "<br>" + span.textContent;
+                if (me.waitingTime) {
+                    span.innerHTML = me.waitingTime + "<br>" + span.textContent;
+                    me.l.style.opacity = "0.6";
+                } else {
+                    me.l.style.opacity = "1";
+                }
                 if (me.BestHelperOrder) {
                     BestDealHelper.colorSpanInRainbow(span);
                 } else {
@@ -557,7 +583,12 @@ var BestDealHelper = {
                 } else if (me.BestBuyToAmount > me.amount + 1) {
                     span.textContent += " (to " + me.BestBuyToAmount + ")";
                 }
-                if (me.waitingTime) span.textContent += " ⏳" + me.waitingTime;
+                if (me.waitingTime) {
+                    span.textContent += " ⏳" + me.waitingTime;
+                    me.l.style.opacity = "0.6";
+                } else {
+                    me.l.style.opacity = "1";
+                }
                 if (me.BestHelperOrder) {
                     BestDealHelper.colorSpanInRainbow(span);
                 } else {

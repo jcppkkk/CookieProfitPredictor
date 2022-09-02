@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2048.06] - 2022.09.03
+### New
+- Force lock banking items
+### Fix
+- calculate waiting time based on raw CPS rather then buffed CPS
+
 ## [2048.05] - 2022.09.02
 ### Improve
 - Classic menu theme
