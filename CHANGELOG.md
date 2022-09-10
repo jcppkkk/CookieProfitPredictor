@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2048.07] - 2022.09.10
+### Improve
+- UI improvements
+
 ## [2048.06] - 2022.09.03
 ### New
 - Force lock banking items
