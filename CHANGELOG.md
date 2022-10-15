@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2048.08] - 2022.10.15
+### Improve
+- UI improvements
+### Fix
+- Remove Idleverse toggle button (not useful in game)
+
 ## [2048.07] - 2022.09.10
 ### Improve
 - UI improvements

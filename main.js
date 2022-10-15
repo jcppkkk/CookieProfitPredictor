@@ -41,6 +41,7 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {number} SingleCps
  * @property {number} timeToTargetCookie
  * @property {string} name
+ * @property {string} dname
  * @property {string} type
  * @property {string} pool
  * @property {string} waitingTime
@@ -64,8 +65,8 @@ var PlaySound = (PlaySound === undefined) ? () => { } : PlaySound;
  * @property {number} SingleCps
  * @property {number} tier
  * @property {number} timeToTargetCookie
- * @property {Object} Idleverse
  * @property {string} name
+ * @property {string} dname
  * @property {string} type
  * @property {string} pool
  * @property {string} waitingTime
@@ -158,7 +159,6 @@ var BestDealHelper_default_config = {
     enableSort: 1,
     sortGrandmapocalypse: 1,
     sortWizardTower: 1,
-    sortIdleverse: 1,
     color0: "#00ffff",
     color1: "#00ff00",
     color7: "#ffd939",
@@ -309,7 +309,6 @@ var BestDealHelper = {
         return (
             (!BestDealHelper.config.sortGrandmapocalypse && ["One mind", "Communal brainsweep", "Elder Pact"].includes(me.name)) ||
             (!BestDealHelper.config.sortWizardTower && me.name == "Wizard tower") ||
-            (!BestDealHelper.config.sortIdleverse && me.name == "Idleverse") ||
             me.pool === "toggle" ||
             (me.isVaulted && me.isVaulted())
         );
@@ -725,17 +724,17 @@ var BestDealHelper = {
             ${BestDealHelper.button("enableSort", "Sort by best deal ON", "Sort by best deal OFF")}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("sortGrandmapocalypse", 'Sort grandmapocalypse ON', 'Sort grandmapocalypse OFF')}
+            ${BestDealHelper.button("sort Grandmapocalypse", 'Sort Grandmapocalypse ON', 'Sort Grandmapocalypse OFF')}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("sortWizardTower", "Sort wizard tower ON", "Sort wizard tower OFF")}
-        </div>
-        <div class="listing">
-            ${BestDealHelper.button("sortIdleverse", "Sort idleverse ON", "Sort idleverse OFF")}
+            ${BestDealHelper.button(
+            "sortWizardTower",
+            `Sort ${Game.Objects["Wizard tower"].dname} ON`,
+            `Sort ${Game.Objects["Wizard tower"].dname} OFF`)}
         </div>
         <div class="listing">
             ${BestDealHelper.button("isBanking", "Banking cookies ON", "Banking cookies OFF")}
-            ${BestDealHelper.numberInput("bankingSeconds")}<label>(seconds of cookies. 6000 without lucky upgrade; 42000 with luck upgrade)</label>
+            ${BestDealHelper.numberInput("bankingSeconds")}<label>(items will get locked to keep at least X second of cookies. 6000 without lucky upgrade; 43200 with luck upgrade)</label>
         </div>
         <div class="listing">
             ${BestDealHelper.intervalInput("updateMS", "Update Interval(ms)")}<label>(increase it if game lags)</label>
