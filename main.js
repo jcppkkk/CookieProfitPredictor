@@ -286,12 +286,16 @@ var BestDealHelper = {
         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
     },
 
+    getBankCookies: function (){
+        return BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * Game.cookiesPsRaw;
+    },
+
     calcCookieTimesCost: function (
         /** @type {number} */ price,
         /** @type {number} */ oldCps,
         /** @type {SimulateStatus} */ sim
     ) {
-        const bank = BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * Game.cookiesPs;
+        const bank = BestDealHelper.getBankCookies();
         if (sim.currentCookies >= (price + bank)) {
             sim.paidCookies += price;
             sim.currentCookies -= price;
@@ -501,8 +505,8 @@ var BestDealHelper = {
 
     calcWaitingTime: function (
         /** @type {(Building|Upgrade)}*/ me
-    ) {
-        const bank = BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * Game.cookiesPs;
+        ) {
+            const bank = BestDealHelper.getBankCookies();
         let waitCookie = me.getPrice() + bank - Game.cookies;
         if (waitCookie < 0) return "";
 
@@ -734,7 +738,7 @@ var BestDealHelper = {
         </div>
         <div class="listing">
             ${BestDealHelper.button("isBanking", "Banking cookies ON", "Banking cookies OFF")}
-            ${BestDealHelper.numberInput("bankingSeconds")}<label>(items will get locked to keep at least X second of cookies. 6000 without lucky upgrade; 43200 with luck upgrade)</label>
+            ${BestDealHelper.numberInput("bankingSeconds")}<label>(items will get locked to keep at least X second of cookies in bank. 6000 CpS(42000 with Get Lucky upgrade) for maximum Lucky! payout; 43200 CpS(302400 with Get Lucky upgrade) for maximum Cookie chain payout)</label>
         </div>
         <div class="listing">
             ${BestDealHelper.intervalInput("updateMS", "Update Interval(ms)")}<label>(increase it if game lags)</label>
@@ -795,7 +799,7 @@ var BestDealHelper = {
         const ID = `BestDealHelper${config}Input`;
         const callback = `BestDealHelper.textInputCallback('${config}', '${ID}');`;
         const value = BestDealHelper.config[config];
-        return `<input type="number" min="0" style="width:4em;" id="${ID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
+        return `<input type="number" min="0" style="width:6em;" id="${ID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
     },
 
     /**

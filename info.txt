@@ -1,11 +1,11 @@
 {
- "Name": "Best Deal Helper",
+ "Name": "Payback Rate (Best Deal Helper)",
  "ID": "BestDealHelper",
  "Author": "Jethro Yu",
  "Description": "Help you choose best deal!",
- "ModVersion": 2048.03,
+ "ModVersion": 2048.09,
  "GameVersion": 2.048,
- "Date": "12/07/2022",
+ "Date": "01/13/2023",
  "Dependencies": [
   "CCSE"
  ],

@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2048.09] - 2023.01.13
+### Improve
+- Use cookiesPsRaw when calculating banking cookies, in order to get a stable cookie banking target.
+### Fix
+- Correct the banking CpS about `Lucky!`, `Cookie chain` and `Get Lucky upgrade`
+
 ## [2048.08] - 2022.10.15
 ### Improve
 - UI improvements

@@ -1,5 +1,5 @@
-## [2048.08] - 2022.10.15
+## [2048.09] - 2023.01.13
 ### Improve
-- UI improvements
+- Use cookiesPsRaw when calculating banking cookies, in order to get a stable cookie banking target.
 ### Fix
-- Remove Idleverse toggle button (not useful in game)
+- Correct the banking CpS about `Lucky!`, `Cookie chain` and `Get Lucky upgrade`
