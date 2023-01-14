@@ -10,7 +10,7 @@
         "Idleverses",
         "Mult",
         "Precup",
-        "unbuffed"s
+        "unbuffed"
     ],
     "files.exclude": {
         "chroma.min.js": true,

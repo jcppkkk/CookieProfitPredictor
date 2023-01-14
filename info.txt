@@ -1,8 +1,8 @@
 {
- "Name": "Payback Rate (Best Deal Helper)",
+ "Name": "Payback Rate Mod",
  "ID": "BestDealHelper",
  "Author": "Jethro Yu",
- "Description": "Help you choose best deal!",
+ "Description": "Help you choose best deal! (Best Deal Helper)",
  "ModVersion": 2048.09,
  "GameVersion": 2.048,
  "Date": "01/13/2023",

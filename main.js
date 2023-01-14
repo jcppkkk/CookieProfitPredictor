@@ -155,28 +155,28 @@ var Game;
 
 LoadScript(App.mods.BestDealHelper.dir + "/chroma.min.js");
 
-var BestDealHelper_default_config = {
-    enableSort: 1,
-    sortGrandmapocalypse: 1,
-    sortWizardTower: 1,
-    color0: "#00ffff",
-    color1: "#00ff00",
-    color7: "#ffd939",
-    color15: "#ff4d4d",
-    colorLast: "#de4dff",
-    isBanking: 0,
-    bankingSeconds: 0,
-    updateMS: 1000,
-};
-
-var BestDealHelper = {
-    name: "Best Deal Helper",
+var PRM = {
+    displayname: "Payback Rate Mod",
+    name: "Best Deal Helper", // the original name of the mod, keep for save compatibility
     version: "2048.07",
     isLoaded: false,
     load_chroma: false,
     loopCount: 0,
     last_cps: 0,
     Upgrades: new Map(),
+    default_config: {
+        enableSort: 1,
+        sortGrandmapocalypse: 1,
+        sortWizardTower: 1,
+        color0: "#00ffff",
+        color1: "#00ff00",
+        color7: "#ffd939",
+        color15: "#ff4d4d",
+        colorLast: "#de4dff",
+        isBanking: 0,
+        bankingSeconds: 0,
+        updateMS: 1000,
+    },
 
     register: function () {
         Game.registerMod(this.name, this);
@@ -185,15 +185,15 @@ var BestDealHelper = {
     init: function () {
         // iterable Updates
         const buildMap = (/** @type {Upgrade[]} */ obj) => Object.keys(obj).reduce((map, key) => map.set(key, obj[key]), new Map());
-        BestDealHelper.Upgrades = buildMap(Game.UpgradesById);
+        PRM.Upgrades = buildMap(Game.UpgradesById);
 
         // UI: add Version to status page
         Game.customStatsMenu.push(function () {
-            CCSE.AppendStatsVersionNumber(BestDealHelper.name, BestDealHelper.version);
+            CCSE.AppendStatsVersionNumber(PRM.displayname, PRM.version);
         });
 
         // UI: add menu to config page
-        Game.customOptionsMenu.push(BestDealHelper.addOptionsMenu);
+        Game.customOptionsMenu.push(PRM.addOptionsMenu);
 
         // UI: adjust building layout
         [...document.styleSheets[1].cssRules].forEach(function (e) {
@@ -211,14 +211,14 @@ var BestDealHelper = {
         var OriginalRebuildUpgrades = Game.RebuildUpgrades;
         Game.RebuildUpgrades = function () {
             OriginalRebuildUpgrades();
-            BestDealHelper.mainLoop();
+            PRM.mainLoop();
         };
 
         // Hook: wrap Game.RefreshStore
         var OriginalRefreshStore = Game.RefreshStore;
         Game.RefreshStore = function () {
             OriginalRefreshStore();
-            BestDealHelper.mainLoop();
+            PRM.mainLoop();
         };
 
         // Hook: wrap Game.ClickProduct
@@ -237,45 +237,45 @@ var BestDealHelper = {
         };
         // Check changes from time to time
         setTimeout(function () {
-            setTimeout(BestDealHelper.tick, BestDealHelper.config.updateMS / 10);
+            setTimeout(PRM.tick, PRM.config.updateMS / 10);
         }, 500);
-        BestDealHelper.isLoaded = true;
-    },
 
-    config: { ...BestDealHelper_default_config },
-    last_config: { ...BestDealHelper_default_config },
+        PRM.config = { ...PRM.default_config};
+        PRM.last_config = { ...PRM.default_config };
+        PRM.isLoaded = true;
+    },
 
     load: function (/** @type {string} */ str) {
         const config = JSON.parse(str);
         for (const c in config) {
-            if (BestDealHelper.config.hasOwnProperty(c)) {
-                BestDealHelper.config[c] = config[c];
+            if (PRM.config.hasOwnProperty(c)) {
+                PRM.config[c] = config[c];
             }
         }
-        BestDealHelper.updateUI();
+        PRM.updateUI();
     },
 
     save: function () {
-        return JSON.stringify(BestDealHelper.config);
+        return JSON.stringify(PRM.config);
     },
 
     tick: function () {
-        BestDealHelper.loopCount++;
-        BestDealHelper.mainLoop();
-        setTimeout(BestDealHelper.tick, BestDealHelper.config.updateMS / 10);
+        PRM.loopCount++;
+        PRM.mainLoop();
+        setTimeout(PRM.tick, PRM.config.updateMS / 10);
     },
 
     mainLoop: function () {
-        if (BestDealHelper.loopCount >= 10 ||
-            BestDealHelper.last_cps !== Game.cookiesPs ||
+        if (PRM.loopCount >= 10 ||
+            PRM.last_cps !== Game.cookiesPs ||
             !document.querySelector("#productAcc0") ||
             (l("upgrade0") && !l("upgradeAcc0")) ||
-            JSON.stringify(BestDealHelper.config) !== JSON.stringify(BestDealHelper.last_config)
+            JSON.stringify(PRM.config) !== JSON.stringify(PRM.last_config)
         ) {
-            BestDealHelper.updateUI();
-            BestDealHelper.last_config = { ...BestDealHelper.config };
-            BestDealHelper.last_cps = Game.cookiesPs;
-            BestDealHelper.loopCount = 0;
+            PRM.updateUI();
+            PRM.last_config = { ...PRM.config };
+            PRM.last_cps = Game.cookiesPs;
+            PRM.loopCount = 0;
         }
     },
 
@@ -287,7 +287,7 @@ var BestDealHelper = {
     },
 
     getBankCookies: function (){
-        return BestDealHelper.config.isBanking * BestDealHelper.config.bankingSeconds * Game.cookiesPsRaw;
+        return PRM.config.isBanking * PRM.config.bankingSeconds * Game.cookiesPsRaw;
     },
 
     calcCookieTimesCost: function (
@@ -295,7 +295,7 @@ var BestDealHelper = {
         /** @type {number} */ oldCps,
         /** @type {SimulateStatus} */ sim
     ) {
-        const bank = BestDealHelper.getBankCookies();
+        const bank = PRM.getBankCookies();
         if (sim.currentCookies >= (price + bank)) {
             sim.paidCookies += price;
             sim.currentCookies -= price;
@@ -311,8 +311,8 @@ var BestDealHelper = {
 
     isIgnored: function (/** @type {(Building|Upgrade)} */ me) {
         return (
-            (!BestDealHelper.config.sortGrandmapocalypse && ["One mind", "Communal brainsweep", "Elder Pact"].includes(me.name)) ||
-            (!BestDealHelper.config.sortWizardTower && me.name == "Wizard tower") ||
+            (!PRM.config.sortGrandmapocalypse && ["One mind", "Communal brainsweep", "Elder Pact"].includes(me.name)) ||
+            (!PRM.config.sortWizardTower && me.name == "Wizard tower") ||
             me.pool === "toggle" ||
             (me.isVaulted && me.isVaulted())
         );
@@ -359,16 +359,16 @@ var BestDealHelper = {
         me.BestWaitTime = Infinity;
 
         // Treat Grandmapocalypse upgrade as 0% temporary
-        if (BestDealHelper.isIgnored(me) || Game.cookies === 0) return;
+        if (PRM.isIgnored(me) || Game.cookies === 0) return;
 
         const oldCps = Game.unbuffedCps;
-        var /** @type {SimulateStatus} */ sim = BestDealHelper.initSimData();
+        var /** @type {SimulateStatus} */ sim = PRM.initSimData();
 
-        const save = BestDealHelper.enterSandBox(me);
+        const save = PRM.enterSandBox(me);
 
         if (me.type == "upgrade") {
             // Simulate upgrade
-            BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.unbuffedCps, sim);
+            PRM.calcCookieTimesCost(me.getPrice(), Game.unbuffedCps, sim);
             me.amount++;
             me.bought++;
             Game.CalculateGains();
@@ -387,12 +387,12 @@ var BestDealHelper = {
             }
 
             for (var buy = 0; buy < 50; buy++) {
-                BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.unbuffedCps, sim);
+                PRM.calcCookieTimesCost(me.getPrice(), Game.unbuffedCps, sim);
                 me.amount++;
                 me.bought++;
                 Game.CalculateGains();
                 if (nextTierUpgrade && me.amount == amountToUnlockTier) {
-                    BestDealHelper.calcCookieTimesCost(nextTierUpgrade.getPrice(), Game.unbuffedCps, sim);
+                    PRM.calcCookieTimesCost(nextTierUpgrade.getPrice(), Game.unbuffedCps, sim);
                     nextTierUpgrade.bought = 1;
                     Game.CalculateGains();
                 }
@@ -409,7 +409,7 @@ var BestDealHelper = {
             }
             if (nextTierUpgrade) nextTierUpgrade.bought = 0;
         }
-        BestDealHelper.leaveSandBox(save);
+        PRM.leaveSandBox(save);
     },
 
     /**
@@ -417,7 +417,7 @@ var BestDealHelper = {
      */
     updateHelperOrder: function (/** @type {(Building | Upgrade)[]} */ all) {
         all.forEach(e => e.BestHelperOrder = 0);
-        all = all.filter(e => !BestDealHelper.isIgnored(e));
+        all = all.filter(e => !PRM.isIgnored(e));
 
         let helperOrder = 0;
         let target = all[0];
@@ -433,19 +433,19 @@ var BestDealHelper = {
             }
             if (!helpers.length) return;
             for (let me of helpers) {
-                const save = BestDealHelper.enterSandBox(me);
+                const save = PRM.enterSandBox(me);
 
-                let /** @type {SimulateStatus} */ sim = BestDealHelper.initSimData();
+                let /** @type {SimulateStatus} */ sim = PRM.initSimData();
 
                 me.timeToTargetCookie = Infinity;
                 for (var buy = 1; buy < Infinity; buy++) {
-                    BestDealHelper.calcCookieTimesCost(me.getPrice(), Game.unbuffedCps, sim);
+                    PRM.calcCookieTimesCost(me.getPrice(), Game.unbuffedCps, sim);
                     me.amount++;
                     me.bought++;
                     Game.CalculateGains();
                     // Calculate time to target with current deal stack
                     let simTarget = Object.assign({}, sim);
-                    BestDealHelper.calcCookieTimesCost(target.getPrice(), Game.unbuffedCps, simTarget);
+                    PRM.calcCookieTimesCost(target.getPrice(), Game.unbuffedCps, simTarget);
                     if (simTarget.waitTime >= target.timeToTargetCookie || simTarget.waitTime >= me.timeToTargetCookie) {
                         break;
                     } else {
@@ -456,7 +456,7 @@ var BestDealHelper = {
                     if (me.type == "upgrade") break;
                 }
 
-                BestDealHelper.leaveSandBox(save);
+                PRM.leaveSandBox(save);
             }
 
             helpers.sort((a, b) => a.timeToTargetCookie - b.timeToTargetCookie);
@@ -483,7 +483,7 @@ var BestDealHelper = {
         /** @type {number} */ value
     ) {
         try {
-            span.style.color = BestDealHelper.colorRender(value);
+            span.style.color = PRM.colorRender(value);
         } catch (e) { }
     },
 
@@ -492,21 +492,21 @@ var BestDealHelper = {
     ) {
         let cpsAccList = [...new Set(all.map(e => e.BestCpsAcceleration))].sort((a, b) => b - a);
         const colorGroups = [
-            [BestDealHelper.config.colorLast, cpsAccList[cpsAccList.length - 1]],
-            [BestDealHelper.config.color15, cpsAccList[15]],
-            [BestDealHelper.config.color7, cpsAccList[7]],
-            [BestDealHelper.config.color1, cpsAccList[1]],
-            [BestDealHelper.config.color0, cpsAccList[0]],
+            [PRM.config.colorLast, cpsAccList[cpsAccList.length - 1]],
+            [PRM.config.color15, cpsAccList[15]],
+            [PRM.config.color7, cpsAccList[7]],
+            [PRM.config.color1, cpsAccList[1]],
+            [PRM.config.color0, cpsAccList[0]],
         ].filter(e => e[1] !== undefined);
         // @ts-ignore
-        BestDealHelper.colorRender = chroma.scale(colorGroups.map(e => e[0])).mode("lab").domain(colorGroups.map(e => e[1]));
+        PRM.colorRender = chroma.scale(colorGroups.map(e => e[0])).mode("lab").domain(colorGroups.map(e => e[1]));
     },
 
 
     calcWaitingTime: function (
         /** @type {(Building|Upgrade)}*/ me
         ) {
-            const bank = BestDealHelper.getBankCookies();
+            const bank = PRM.getBankCookies();
         let waitCookie = me.getPrice() + bank - Game.cookies;
         if (waitCookie < 0) return "";
 
@@ -530,7 +530,7 @@ var BestDealHelper = {
         /** @type {(Building | Upgrade)} */ me,
         /** @type {number} */ avgAcc
     ) {
-        me.waitingTime = BestDealHelper.calcWaitingTime(me);
+        me.waitingTime = PRM.calcWaitingTime(me);
         if (me.type == "upgrade") { /* Upgrade */
             // @ts-ignore
             var inStoreId = Game.UpgradesInStore.indexOf(me);
@@ -566,9 +566,9 @@ var BestDealHelper = {
                     me.l.style.removeProperty("opacity");
                 }
                 if (me.BestHelperOrder) {
-                    BestDealHelper.colorSpanInRainbow(span);
+                    PRM.colorSpanInRainbow(span);
                 } else {
-                    BestDealHelper.colorSpanByValue(span, me.BestCpsAcceleration);
+                    PRM.colorSpanByValue(span, me.BestCpsAcceleration);
                 }
             }
 
@@ -582,7 +582,7 @@ var BestDealHelper = {
                 span.style.fontWeight = "bolder";
                 span.style.display = "block";
                 span.style.filter = "contrast(1.5)";
-                BestDealHelper.insertAfter(span, l("productPrice" + me.id));
+                PRM.insertAfter(span, l("productPrice" + me.id));
             }
 
             // Text
@@ -614,9 +614,9 @@ var BestDealHelper = {
                     me.l.style.removeProperty("opacity");
                 }
                 if (me.BestHelperOrder) {
-                    BestDealHelper.colorSpanInRainbow(span);
+                    PRM.colorSpanInRainbow(span);
                 } else {
-                    BestDealHelper.colorSpanByValue(span, me.BestCpsAcceleration);
+                    PRM.colorSpanByValue(span, me.BestCpsAcceleration);
                 }
             }
         }
@@ -638,7 +638,7 @@ var BestDealHelper = {
         let upgrades_order = upgrades.map(e => e.l.id);
         let upgrades_order_on_page = [...document.querySelectorAll(".upgrade")].map(e => e.id).filter(e => e !== "storeBuyAll");
 
-        if (BestDealHelper.arrayCommonInTheSameOrder(upgrades_order, upgrades_order_on_page))
+        if (PRM.arrayCommonInTheSameOrder(upgrades_order, upgrades_order_on_page))
             return;
 
         // Only sort when the order is different
@@ -659,7 +659,7 @@ var BestDealHelper = {
         let buildings_order = buildings.map(e => e.l.id);
         let building_order_on_page = [...document.querySelectorAll(".product:not(.toggledOff)")].map(e => e.id).filter(e => e !== "storeBulk");
 
-        if (BestDealHelper.arrayCommonInTheSameOrder(buildings_order, building_order_on_page))
+        if (PRM.arrayCommonInTheSameOrder(buildings_order, building_order_on_page))
             return;
 
         // Only sort when the order is different
@@ -679,16 +679,15 @@ var BestDealHelper = {
         let all = [...buildings, ...upgrades];
 
         // Calculate BestCpsAcceleration
-        for (let me of all) BestDealHelper.updateBestCpsAcceleration(me);
+        for (let me of all) PRM.updateBestCpsAcceleration(me);
 
         // Sorting by BestCpsAcceleration
         all.sort((a, b) => b.BestCpsAcceleration - a.BestCpsAcceleration);
 
-        // If the best BestCpsAcceleration is not affordable, search pre-deals to help us get the best deal quicker.
-        BestDealHelper.updateHelperOrder(all);
+        PRM.updateHelperOrder(all);
 
         // Build chroma color render function
-        BestDealHelper.updateColorRender(all);
+        PRM.updateColorRender(all);
 
         // Normalized Notation by Mean
         let allAcc = all.map(e => e.BestCpsAcceleration).filter(e => e !== 0);
@@ -696,7 +695,7 @@ var BestDealHelper = {
         const avg = allAcc.reduce((a, b) => a + b, 0) / allAcc.length;
 
         // Notation for upgrades & buildings
-        all.forEach(me => BestDealHelper.updateNotation(me, avg));
+        all.forEach(me => PRM.updateNotation(me, avg));
         // if there is only non-acc upgrade(s), add empty element placeholder to avoid mainLoop trigger
         if (!l("upgradeAcc0")) {
             let span = document.createElement("span");
@@ -706,10 +705,10 @@ var BestDealHelper = {
 
 
         // Sort upgrades & buildings (or leave them as default)
-        if (BestDealHelper.config.enableSort) {
+        if (PRM.config.enableSort) {
             var sortFunction = function ( /** @type {(Building | Upgrade)} */a, /** @type {(Building | Upgrade)} */b) {
                 return (
-                    +!BestDealHelper.isIgnored(b) - +!BestDealHelper.isIgnored(a) ||
+                    +!PRM.isIgnored(b) - +!PRM.isIgnored(a) ||
                     b.BestHelperOrder - a.BestHelperOrder ||
                     b.BestCpsAcceleration - a.BestCpsAcceleration
                 );
@@ -718,48 +717,48 @@ var BestDealHelper = {
             buildings.sort(sortFunction);
         }
 
-        BestDealHelper.reorderUpgrades(upgrades);
-        BestDealHelper.reorderBuildings(buildings);
+        PRM.reorderUpgrades(upgrades);
+        PRM.reorderBuildings(buildings);
     },
 
     addOptionsMenu: function () {
         const body = `
         <div class="listing">
-            ${BestDealHelper.button("enableSort", "Sort by best deal ON", "Sort by best deal OFF")}
+            ${PRM.button("enableSort", "Sort by best deal ON", "Sort by best deal OFF")}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("sort Grandmapocalypse", 'Sort Grandmapocalypse ON', 'Sort Grandmapocalypse OFF')}
+            ${PRM.button("sort Grandmapocalypse", 'Sort Grandmapocalypse ON', 'Sort Grandmapocalypse OFF')}
         </div>
         <div class="listing">
-            ${BestDealHelper.button(
+            ${PRM.button(
             "sortWizardTower",
             `Sort ${Game.Objects["Wizard tower"].dname} ON`,
             `Sort ${Game.Objects["Wizard tower"].dname} OFF`)}
         </div>
         <div class="listing">
-            ${BestDealHelper.button("isBanking", "Banking cookies ON", "Banking cookies OFF")}
-            ${BestDealHelper.numberInput("bankingSeconds")}<label>(items will get locked to keep at least X second of cookies in bank. 6000 CpS(42000 with Get Lucky upgrade) for maximum Lucky! payout; 43200 CpS(302400 with Get Lucky upgrade) for maximum Cookie chain payout)</label>
+            ${PRM.button("isBanking", "Banking cookies ON", "Banking cookies OFF")}
+            ${PRM.numberInput("bankingSeconds")}<label>(items will get locked to keep at least X second of cookies in bank. 6000 CpS(42000 with Get Lucky upgrade) for maximum Lucky! payout; 43200 CpS(302400 with Get Lucky upgrade) for maximum Cookie chain payout)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.intervalInput("updateMS", "Update Interval(ms)")}<label>(increase it if game lags)</label>
+            ${PRM.intervalInput("updateMS", "Update Interval(ms)")}<label>(increase it if game lags)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color0")}<label>(best deal color)</label>
+            ${PRM.colorPicker("color0")}<label>(best deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color1")}<label>(2nd deal color)</label>
+            ${PRM.colorPicker("color1")}<label>(2nd deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color7")}<label>(8st deal color)</label>
+            ${PRM.colorPicker("color7")}<label>(8st deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("color15")}<label>(16st deal color)</label>
+            ${PRM.colorPicker("color15")}<label>(16st deal color)</label>
         </div>
         <div class="listing">
-            ${BestDealHelper.colorPicker("colorLast")}<label>(worst deal color)</label>
+            ${PRM.colorPicker("colorLast")}<label>(worst deal color)</label>
         </div>`;
 
-        CCSE.AppendCollapsibleOptionsMenu(BestDealHelper.name, body);
+        CCSE.AppendCollapsibleOptionsMenu(PRM.displayname, body);
     },
 
     /**
@@ -770,9 +769,9 @@ var BestDealHelper = {
      * @returns 
      */
     button: function (config, textOn, textOff) {
-        const name = `BestDealHelper${config}Button`;
-        const callback = `BestDealHelper.buttonCallback('${config}', '${name}', '${textOn}', '${textOff}');`;
-        const value = BestDealHelper.config[config];
+        const name = `PRM${config}Button`;
+        const callback = `PRM.buttonCallback('${config}', '${name}', '${textOn}', '${textOff}');`;
+        const value = PRM.config[config];
         return `<a class="smallFancyButton prefButton ${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${value ? textOn : textOff}</a>`;
     },
 
@@ -783,8 +782,8 @@ var BestDealHelper = {
      * @param {string} textOff
      */
     buttonCallback: function (config, buttonID, textOn, textOff) {
-        const value = !BestDealHelper.config[config];
-        BestDealHelper.config[config] = value;
+        const value = !PRM.config[config];
+        PRM.config[config] = value;
         l(buttonID).innerHTML = value ? textOn : textOff;
         l(buttonID).className = `smallFancyButton prefButton ${value ? "option" : "option off"}`;
         PlaySound("snd/tick.mp3");
@@ -796,9 +795,9 @@ var BestDealHelper = {
      * @returns {string}
      */
     numberInput: function (config) {
-        const ID = `BestDealHelper${config}Input`;
-        const callback = `BestDealHelper.textInputCallback('${config}', '${ID}');`;
-        const value = BestDealHelper.config[config];
+        const ID = `PRM${config}Input`;
+        const callback = `PRM.textInputCallback('${config}', '${ID}');`;
+        const value = PRM.config[config];
         return `<input type="number" min="0" style="width:6em;" id="${ID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
     },
 
@@ -811,10 +810,10 @@ var BestDealHelper = {
      * @returns {string}
      */
     intervalInput: function (config, name, min = 500, max = 5000, step = 100) {
-        const ID = `BestDealHelper${config}Input`;
-        const callback = `BestDealHelper.textInputCallback('${config}', '${ID}Slider');` +
+        const ID = `PRM${config}Input`;
+        const callback = `PRM.textInputCallback('${config}', '${ID}Slider');` +
             `l('${ID}RightText').innerHTML=l('${ID}Slider').value+'ms';`;
-        const value = BestDealHelper.config[config];
+        const value = PRM.config[config];
         return `<div class="sliderBox">
             <div id="${ID}" style="float:left;" class="smallFancyButton">${name}</div>
             <div id="${ID}RightText" style="float:right;" class="smallFancyButton">${value}ms</div>
@@ -829,7 +828,7 @@ var BestDealHelper = {
     textInputCallback: function (config, ID) {
         l(ID).value = l(ID).value.replace(/[^0-9]/g, "");
         const value = l(ID).value;
-        BestDealHelper.config[config] = parseInt(value);
+        PRM.config[config] = parseInt(value);
     },
 
     /**
@@ -838,11 +837,11 @@ var BestDealHelper = {
      * @returns {string}
      */
     colorPicker: function (config) {
-        const pickerID = `BestDealHelper${config}Picker`;
-        const callback = `BestDealHelper.colorPickerCallback('${config}', '${pickerID}');`;
-        const defaultColor = BestDealHelper_default_config[config];
-        const reset = `BestDealHelper.config.${config}='${defaultColor}';l('${pickerID}').value='${defaultColor}';`;
-        const value = BestDealHelper.config[config];
+        const pickerID = `PRM${config}Picker`;
+        const callback = `PRM.colorPickerCallback('${config}', '${pickerID}');`;
+        const defaultColor = PRM.default_config[config];
+        const reset = `PRM.config.${config}='${defaultColor}';l('${pickerID}').value='${defaultColor}';`;
+        const value = PRM.config[config];
         return `<input type="color" id="${pickerID}" value=${value} oninput="${callback}"> <a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
     },
 
@@ -852,29 +851,28 @@ var BestDealHelper = {
      */
     colorPickerCallback: function (config, pickerID) {
         const value = l(pickerID).value;
-        BestDealHelper.config[config] = value;
+        PRM.config[config] = value;
     }
 };
 
-// Bind methods`
-const methods = Object.getOwnPropertyNames(BestDealHelper).filter(
-    m => typeof BestDealHelper[m] === "function"
+// Bind methods
+const methods = Object.getOwnPropertyNames(PRM).filter(
+    m => typeof PRM[m] === "function"
 );
 for (var func of methods) {
-    BestDealHelper[func] = BestDealHelper[func].bind(BestDealHelper);
-
+    PRM[func] = PRM[func].bind(PRM);
 }
 
 // Load mod
-if (!BestDealHelper.isLoaded) {
+if (!PRM.isLoaded) {
     if (CCSE && CCSE.isLoaded) {
-        BestDealHelper.register();
+        PRM.register();
     } else {
         if (!CCSE) {
             // @ts-ignore
             var CCSE = {}; // use var here, or it may cause loading error
         }
         if (!CCSE.postLoadHooks) CCSE.postLoadHooks = [];
-        CCSE.postLoadHooks.push(BestDealHelper.register);
+        CCSE.postLoadHooks.push(PRM.register);
     }
 }
