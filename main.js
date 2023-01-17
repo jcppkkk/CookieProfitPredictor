@@ -724,10 +724,10 @@ var PRM = {
     addOptionsMenu: function () {
         const body = `
         <div class="listing">
-            ${PRM.button("enableSort", "Sort by best deal ON", "Sort by best deal OFF")}
+            ${PRM.button("enableSort", "Sort by payback rate ON", "Sort by payback rate OFF")}
         </div>
         <div class="listing">
-            ${PRM.button("sort Grandmapocalypse", 'Sort Grandmapocalypse ON', 'Sort Grandmapocalypse OFF')}
+            ${PRM.button("sortGrandmapocalypse", 'Sort Grandmapocalypse ON', 'Sort Grandmapocalypse OFF')}
         </div>
         <div class="listing">
             ${PRM.button(
@@ -743,19 +743,19 @@ var PRM = {
             ${PRM.intervalInput("updateMS", "Update Interval(ms)")}<label>(increase it if game lags)</label>
         </div>
         <div class="listing">
-            ${PRM.colorPicker("color0")}<label>(best deal color)</label>
+            ${PRM.colorPicker("color0")}<label>(best payback rate color)</label>
         </div>
         <div class="listing">
-            ${PRM.colorPicker("color1")}<label>(2nd deal color)</label>
+            ${PRM.colorPicker("color1")}<label>(2nd payback rate color)</label>
         </div>
         <div class="listing">
-            ${PRM.colorPicker("color7")}<label>(8st deal color)</label>
+            ${PRM.colorPicker("color7")}<label>(8st payback rate color)</label>
         </div>
         <div class="listing">
-            ${PRM.colorPicker("color15")}<label>(16st deal color)</label>
+            ${PRM.colorPicker("color15")}<label>(16st payback rate color)</label>
         </div>
         <div class="listing">
-            ${PRM.colorPicker("colorLast")}<label>(worst deal color)</label>
+            ${PRM.colorPicker("colorLast")}<label>(worst payback rate color)</label>
         </div>`;
 
         CCSE.AppendCollapsibleOptionsMenu(PRM.displayname, body);

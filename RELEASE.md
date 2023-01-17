@@ -1,5 +1,3 @@
-## [2048.09] - 2023.01.13
-### Improve
-- Use cookiesPsRaw when calculating banking cookies, in order to get a stable cookie banking target.
+## [2048.10] - 2023.01.18
 ### Fix
-- Correct the banking CpS about `Lucky!`, `Cookie chain` and `Get Lucky upgrade`
+- Fix broken Sort Grandmapocalypse switch
