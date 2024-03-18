@@ -773,7 +773,6 @@ class PaybackRateMod {
      */
     toggleButton(config, text) {
         const name = this.getButtonID(config);
-        const value = this.config[config];
         const button = document.createElement("a");
         button.id = name;
         button.classList.add("smallFancyButton", "prefButton", "option");
@@ -790,6 +789,19 @@ class PaybackRateMod {
         const value = this.config[config];
         button.classList.toggle("off", !value);
         button.textContent = `${text} ${value ? "On" : "Off"}`;
+        //  first button disable rest buttons wit opacity: 0.5
+        const sort_dependent_configs = ["sortGrandmapocalypse", "sortWizardTower"];
+        if (config === "enableSort") {
+            sort_dependent_configs.forEach((buttonId) => {
+                const button = l(this.getButtonID(buttonId));
+                if (button) {
+                    button.style.opacity = (this.config[buttonId] && this.config.enableSort) ? "1" : "0.5";
+                }
+            });
+        }
+        if (sort_dependent_configs.includes(config)) {
+            button.style.opacity = (value && this.config.enableSort) ? "1" : "0.5";
+        }
     }
 
     sortingDiv() {
@@ -800,13 +812,20 @@ class PaybackRateMod {
             { config: "enableSort", text: "Sort by payback rate" },
             { config: "sortGrandmapocalypse", text: "Grandmapocalypse" },
             { config: "sortWizardTower", text: Game.Objects["Wizard tower"].dname },
-            { config: "autoBuy", text: "Auto buy best deal" },
         ];
 
         toggleButtons.forEach((button) => {
             sortingDiv.appendChild(this.toggleButton(button.config, button.text));
         });
+
         return sortingDiv;
+    }
+
+    autoBuyDiv() {
+        /* Auto Buy */
+        const autoBuyDiv = document.createElement("div");
+        autoBuyDiv.appendChild(this.toggleButton("autoBuy", "Auto buy best deal"));
+        return autoBuyDiv;
     }
 
     bankingDiv() {
@@ -901,6 +920,8 @@ class PaybackRateMod {
         const body = document.createElement("div");
         body.classList.add("listing");
         body.appendChild(this.sortingDiv());
+        body.appendChild(document.createElement("br"));
+        body.appendChild(this.autoBuyDiv());
         body.appendChild(document.createElement("br"));
         body.appendChild(this.bankingDiv());
         body.appendChild(document.createElement("br"));
