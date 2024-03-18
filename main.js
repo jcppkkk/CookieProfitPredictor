@@ -166,17 +166,33 @@ class PaybackRateMod {
         this.tickCount = 0;
         this.last_cps = 0;
         this.Upgrades = new Map();
+        /**
+         * @type {Object}
+         */
         this.default_config = {
-            enableSort: 1,
-            sortGrandmapocalypse: 1,
-            sortWizardTower: 1,
+            /** @type {boolean} */
+            enableSort: true,
+            /** @type {boolean} */
+            sortGrandmapocalypse: true,
+            /** @type {boolean} */
+            sortWizardTower: true,
+            /** @type {boolean} */
+            autoBuy: false,
+            /** @type {string} */
             color0: "#00ffff",
+            /** @type {string} */
             color1: "#00ff00",
+            /** @type {string} */
             color7: "#ffd939",
+            /** @type {string} */
             color15: "#ff4d4d",
+            /** @type {string} */
             colorLast: "#de4dff",
-            isBanking: 0,
-            bankingSeconds: 0,
+            /** @type {boolean} */
+            isBanking: true,
+            /** @type {boolean} */
+            bankingSeconds: true,
+            /** @type {number} */
             updateMS: 1000,
         };
     }
@@ -717,7 +733,7 @@ class PaybackRateMod {
         all.forEach(me => this.updateNotation(me, avg));
 
         // if there is only non-acc upgrade(s), add empty element placeholder to avoid mainLoop trigger
-        if (!l("upgradeAcc0")) {
+        if (!l("upgradeAcc0") && l("upgrade0")) {
             const spanElement = document.createElement('span');
             spanElement.id = 'upgradeAcc0';
             l("upgrade0").appendChild(spanElement);
@@ -732,6 +748,7 @@ class PaybackRateMod {
                     b.BestCpsAcceleration - a.BestCpsAcceleration
                 );
             };
+            all.sort(sortFunction);
             upgrades.sort(sortFunction);
             buildings.sort(sortFunction);
         }
@@ -739,54 +756,133 @@ class PaybackRateMod {
         this.reorderUpgrades(upgrades);
         this.reorderBuildings(buildings);
 
-        // if (all[0].waitingTime === "") {
-        //     all[0].buy();
-        // }
+        if (this.config.autoBuy && all[0].waitingTime === "") {
+            all[0].buy();
+        }
     }
 
     /**
      * Adds an options menu to the game interface for the PaybackRateMod class.
      */
-    addOptionsMenu() {
-        const body = `
-        <div class="listing">
-          ${this.toggleButton("enableSort", "Sort by payback rate")}
-          ${this.toggleButton("sortGrandmapocalypse", 'Grandmapocalypse')}
-          ${this.toggleButton("sortWizardTower", Game.Objects["Wizard tower"].dname)}
-        </div>
-        <div class="listing"></div>
-        <div class="listing"></div>
-        <div class="listing">
-          ${this.toggleButton("isBanking", "Banking cookies")}
-          ${this.numberInput("bankingSeconds")}<br>
-          <label>
-            Items will get locked to keep at least X second of cookies in bank.<br>
-            Maximum [Lucky!] payout requires 6000 CpS <br>
-            Maximum [Lucky!] payout with [Get Lucky] upgrade requires 42000 CpS<br>
-            Maximum [Cookie chain] payout requires 43200 CpS<br>
-            Maximum [Cookie chain] payout with [Get Lucky] upgrade requires 302400 CpS
-          </label>
-        </div>
-        <div class="listing">
-          ${this.intervalInput("updateMS", "Update Interval(ms)")}<label>(increase it if game lags)</label>
-        </div>
-        <div class="listing">
-          ${this.colorPicker("color0")}<label>(best payback rate color)</label>
-        </div>
-        <div class="listing">
-          ${this.colorPicker("color1")}<label>(2nd payback rate color)</label>
-        </div>
-        <div class="listing">
-          ${this.colorPicker("color7")}<label>(8st payback rate color)</label>
-        </div>
-        <div class="listing">
-          ${this.colorPicker("color15")}<label>(16st payback rate color)</label>
-        </div>
-        <div class="listing">
-          ${this.colorPicker("colorLast")}<label>(worst payback rate color)</label>
-        </div>`;
+    sortingDiv() {
+        /* Sorting */
+        const sortingDiv = document.createElement("div");
 
+        const toggleButtons = [
+            { config: "enableSort", text: "Sort by payback rate" },
+            { config: "sortGrandmapocalypse", text: "Grandmapocalypse" },
+            { config: "sortWizardTower", text: Game.Objects["Wizard tower"].dname },
+            { config: "autoBuy", text: "Auto buy best deal" },
+        ];
+
+        toggleButtons.forEach((button) => {
+            sortingDiv.appendChild(this.toggleButton(button.config, button.text));
+        });
+        return sortingDiv;
+    }
+
+    bankingDiv() {
+        /* Banking */
+        const bankingSecondsInput = document.createElement("input");
+        bankingSecondsInput.type = "number";
+        bankingSecondsInput.min = "0";
+        bankingSecondsInput.style.width = "6em";
+        bankingSecondsInput.id = "PaybackRateModBankingSecondsInput";
+        bankingSecondsInput.value = this.config.bankingSeconds;
+        bankingSecondsInput.onchange = bankingSecondsInput.onkeypress = bankingSecondsInput.onpaste = bankingSecondsInput.oninput = () => {
+            bankingSecondsInput.value = bankingSecondsInput.value.replace(/[^0-9]/g, "");
+            this.config.bankingSeconds = parseInt(bankingSecondsInput.value);
+        };
+
+        const bankingLabel = document.createElement("label");
+        bankingLabel.innerHTML = "<br>Items will get locked to keep at least X second of cookies in bank.<br>Maximum [Lucky!] payout requires 6000 CpS<br>Maximum [Lucky!] payout with [Get Lucky] upgrade requires 42000 CpS<br>Maximum [Cookie chain] payout requires 43200 CpS<br>Maximum [Cookie chain] payout with [Get Lucky] upgrade requires 302400 CpS";
+
+        const bankingDiv = document.createElement("div");
+        bankingDiv.appendChild(this.toggleButton("isBanking", "Banking cookies"));
+        bankingDiv.appendChild(bankingSecondsInput);
+        bankingDiv.appendChild(bankingLabel);
+        return bankingDiv;
+    }
+    intervalBoxDiv() {
+        /* Update Interval */
+        const updateTimeLabel = document.createElement("div");
+        updateTimeLabel.style.float = "left";
+        updateTimeLabel.innerHTML = "UI Update Interval";
+
+        const updateTimeValue = document.createElement("div");
+        updateTimeValue.style.float = "right";
+        updateTimeValue.id = "PaybackRateMod_UpdateMSValue";
+        updateTimeValue.innerHTML = this.config.updateMS + "ms";
+
+        const updateTimeSlider = document.createElement("input");
+        updateTimeSlider.classList.add("slider");
+        updateTimeSlider.id = "PaybackRateMod_UpdateMSSlider";
+        updateTimeSlider.style.clear = "both";
+        updateTimeSlider.type = "range";
+        updateTimeSlider.min = "500";
+        updateTimeSlider.max = "10000";
+        updateTimeSlider.step = "100";
+        updateTimeSlider.value = this.config.updateMS;
+        updateTimeSlider.onchange = updateTimeSlider.oninput = () => {
+            this.config.updateMS = parseInt(updateTimeSlider.value);
+            l("PaybackRateMod_UpdateMSValue").innerHTML = this.config.updateMS + "ms";
+        }
+        updateTimeSlider.onmouseup = () => {
+            PlaySound('snd/tick.mp3');
+        };
+
+        const intervalBoxDiv = document.createElement("div");
+        intervalBoxDiv.classList.add("sliderBox");
+        intervalBoxDiv.appendChild(updateTimeLabel);
+        intervalBoxDiv.appendChild(updateTimeValue);
+        intervalBoxDiv.appendChild(updateTimeSlider);
+        return intervalBoxDiv;
+    }
+    colorPickerDiv() {
+        /* Color Pickers */
+        const colorPickerDiv = document.createElement("div");
+        const colorPickers = [
+            { config: "color0", label: "(best payback rate color)" },
+            { config: "color1", label: "(2nd payback rate color)" },
+            { config: "color7", label: "(8th payback rate color)" },
+            { config: "color15", label: "(16th payback rate color)" },
+            { config: "colorLast", label: "(worst payback rate color)" },
+        ];
+
+        colorPickers.forEach((picker) => {
+            const colorPicker = document.createElement("input");
+            colorPicker.type = "color";
+            colorPicker.id = `PaybackRateMod${picker.config}Picker`;
+            colorPicker.value = this.config[picker.config];
+            colorPicker.onchange = () => {
+                this.config[picker.config] = colorPicker.value;
+            };
+
+            const colorPickerLabel = document.createElement("label");
+            colorPickerLabel.innerHTML = picker.label;
+
+            colorPickerDiv.appendChild(colorPicker);
+            colorPickerDiv.appendChild(colorPickerLabel);
+            colorPickerDiv.appendChild(document.createElement("br"));
+        });
+        return colorPickerDiv;
+    }
+    addOptionsMenu() {
+        const body = document.createElement("div");
+        body.classList.add("listing");
+        body.appendChild(this.sortingDiv());
+        body.appendChild(document.createElement("br"));
+        body.appendChild(this.bankingDiv());
+        body.appendChild(document.createElement("br"));
+        body.appendChild(this.intervalBoxDiv());
+        body.appendChild(document.createElement("br"));
+        body.appendChild(document.createElement("br"));
+        body.appendChild(this.colorPickerDiv());
         CCSE.AppendCollapsibleOptionsMenu(this.displayname, body);
+    }
+
+    getButtonID(/** @type {string} */ config) {
+        return `PaybackRateMod_${config}`;
     }
     /**
      * 
@@ -795,19 +891,26 @@ class PaybackRateMod {
      * @returns 
      */
     toggleButton(config, text) {
-        const name = `PaybackRateModButton_${config}`;
-        const callback = `paybackRateMod.toggleButtonCallback('${config}', '${name}', '${text}');`;
+        const name = this.getButtonID(config);
+        const callback = `paybackRateMod.toggleButtonCallback('${config}', '${text}');`
         const value = this.config[config];
-        return `<a class="smallFancyButton prefButton ${value ? "option" : "option off"}" id="${name}" ${Game.clickStr}="${callback}">${text} ${value ? "On" : "Off"}</a>`;
+        const button = document.createElement("a");
+        button.classList.add("smallFancyButton", "prefButton");
+        button.classList.toggle("option", value);
+        button.classList.toggle("off", !value);
+        button.id = name;
+        button.setAttribute(Game.clickStr, callback);
+        button.innerHTML = `${text} ${value ? "On" : "Off"}`;
+        return button;
     }
 
     /**
      * @param {string} config
-     * @param {string} buttonID
      * @param {string} text
      */
-    toggleButtonCallback(config, buttonID, text) {
+    toggleButtonCallback(config, text) {
         const value = !this.config[config];
+        const buttonID = `PaybackRateMod_${config}`;
         this.config[config] = value;
         l(buttonID).innerHTML = value ? `${text} On` : `${text} Off`;
         l(buttonID).className = `smallFancyButton prefButton ${value ? "option" : "option off"}`;
