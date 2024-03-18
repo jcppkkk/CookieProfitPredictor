@@ -761,9 +761,37 @@ class PaybackRateMod {
         }
     }
 
+
+    getButtonID(/** @type {string} */ config) {
+        return `PaybackRateMod_${config}`;
+    }
     /**
-     * Adds an options menu to the game interface for the PaybackRateMod class.
+     * 
+     * @param {string} config 
+     * @param {string} text
+     * @returns 
      */
+    toggleButton(config, text) {
+        const name = this.getButtonID(config);
+        const value = this.config[config];
+        const button = document.createElement("a");
+        button.id = name;
+        button.classList.add("smallFancyButton", "prefButton", "option");
+        this.updateButtonState(config, text, button);
+        button.addEventListener("click", () => {
+            this.config[config] = !this.config[config];
+            PlaySound("snd/tick.mp3");
+            this.updateButtonState(config, text, button);
+        });
+        return button;
+    }
+
+    updateButtonState(config, text, button) {
+        const value = this.config[config];
+        button.classList.toggle("off", !value);
+        button.textContent = `${text} ${value ? "On" : "Off"}`;
+    }
+
     sortingDiv() {
         /* Sorting */
         const sortingDiv = document.createElement("div");
@@ -789,7 +817,7 @@ class PaybackRateMod {
         bankingSecondsInput.style.width = "6em";
         bankingSecondsInput.id = "PaybackRateModBankingSecondsInput";
         bankingSecondsInput.value = this.config.bankingSeconds;
-        bankingSecondsInput.onchange = bankingSecondsInput.onkeypress = bankingSecondsInput.onpaste = bankingSecondsInput.oninput = () => {
+        bankingSecondsInput.onchange = bankingSecondsInput.onpaste = bankingSecondsInput.oninput = () => {
             bankingSecondsInput.value = bankingSecondsInput.value.replace(/[^0-9]/g, "");
             this.config.bankingSeconds = parseInt(bankingSecondsInput.value);
         };
@@ -824,12 +852,10 @@ class PaybackRateMod {
         updateTimeSlider.step = "100";
         updateTimeSlider.value = this.config.updateMS;
         updateTimeSlider.onchange = updateTimeSlider.oninput = () => {
+            PlaySound('snd/tick.mp3');
             this.config.updateMS = parseInt(updateTimeSlider.value);
             l("PaybackRateMod_UpdateMSValue").innerHTML = this.config.updateMS + "ms";
         }
-        updateTimeSlider.onmouseup = () => {
-            PlaySound('snd/tick.mp3');
-        };
 
         const intervalBoxDiv = document.createElement("div");
         intervalBoxDiv.classList.add("sliderBox");
@@ -867,6 +893,10 @@ class PaybackRateMod {
         });
         return colorPickerDiv;
     }
+
+    /**
+     * Adds an options menu to the game interface for the PaybackRateMod class.
+     */
     addOptionsMenu() {
         const body = document.createElement("div");
         body.classList.add("listing");
@@ -881,106 +911,6 @@ class PaybackRateMod {
         CCSE.AppendCollapsibleOptionsMenu(this.displayname, body);
     }
 
-    getButtonID(/** @type {string} */ config) {
-        return `PaybackRateMod_${config}`;
-    }
-    /**
-     * 
-     * @param {string} config 
-     * @param {string} text
-     * @returns 
-     */
-    toggleButton(config, text) {
-        const name = this.getButtonID(config);
-        const callback = `paybackRateMod.toggleButtonCallback('${config}', '${text}');`
-        const value = this.config[config];
-        const button = document.createElement("a");
-        button.classList.add("smallFancyButton", "prefButton");
-        button.classList.toggle("option", value);
-        button.classList.toggle("off", !value);
-        button.id = name;
-        button.setAttribute(Game.clickStr, callback);
-        button.innerHTML = `${text} ${value ? "On" : "Off"}`;
-        return button;
-    }
-
-    /**
-     * @param {string} config
-     * @param {string} text
-     */
-    toggleButtonCallback(config, text) {
-        const value = !this.config[config];
-        const buttonID = `PaybackRateMod_${config}`;
-        this.config[config] = value;
-        l(buttonID).innerHTML = value ? `${text} On` : `${text} Off`;
-        l(buttonID).className = `smallFancyButton prefButton ${value ? "option" : "option off"}`;
-        PlaySound("snd/tick.mp3");
-    }
-
-    /**
-     * 
-     * @param {string} config 
-     * @returns {string}
-     */
-    numberInput(config) {
-        const ID = `PaybackRateMod${config}Input`;
-        const callback = `paybackRateMod.textInputCallback('${config}', '${ID}');`;
-        const value = this.config[config];
-        return `<input type="number" min="0" style="width:6em;" id="${ID}" value="${value}" onchange="${callback}" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">`;
-    }
-
-    /**
-     * 
-     * @param {string} config
-     * @param {string} name
-     * @param {number} min
-     * @param {number} step
-     * @returns {string}
-     */
-    intervalInput(config, name, min = 500, max = 5000, step = 100) {
-        const ID = `PaybackRateMod${config}Input`;
-        const callback = `paybackRateMod.textInputCallback('${config}', '${ID}Slider');` +
-            `l('${ID}RightText').innerHTML=l('${ID}Slider').value+'ms';`;
-        const value = this.config[config];
-        return `<div class="sliderBox">
-            <div id="${ID}" style="float:left;" class="smallFancyButton">${name}</div>
-            <div id="${ID}RightText" style="float:right;" class="smallFancyButton">${value}ms</div>
-            <input id="${ID}Slider" class="slider" style="clear:both;" type="range" min="${min}" max="${max}" step="${step}" value="${value}" onchange="${callback}" oninput="this.onchange();">
-            </div>`;
-    }
-
-    /**
-     * @param {string} config
-     * @param {string} ID
-     */
-    textInputCallback(config, ID) {
-        l(ID).value = l(ID).value.replace(/[^0-9]/g, "");
-        const value = l(ID).value;
-        this.config[config] = parseInt(value);
-    }
-
-    /**
-     * 
-     * @param {string} config 
-     * @returns {string}
-     */
-    colorPicker(config) {
-        const pickerID = `PaybackRateMod${config}Picker`;
-        const callback = `paybackRateMod.colorPickerCallback('${config}', '${pickerID}');`;
-        const defaultColor = this.default_config[config];
-        const reset = `paybackRateMod.config.${config}='${defaultColor}';l('${pickerID}').value='${defaultColor}';`;
-        const value = this.config[config];
-        return `<input type="color" id="${pickerID}" value=${value} oninput="${callback}"> <a class="option" ${Game.clickStr}="${reset}">Reset</a>`;
-    }
-
-    /** 
-     * @param {string} config 
-     * @param {string} pickerID
-     */
-    colorPickerCallback(config, pickerID) {
-        const value = l(pickerID).value;
-        this.config[config] = value;
-    }
 };
 
 // Load mod
