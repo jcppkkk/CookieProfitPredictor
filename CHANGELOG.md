@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2048.12] - 2024.03.22
+- Fix auto buy sell out buildings when sell mode is on
+
 ## [2048.11] - 2024.03.18
 ### Feature
 - Add auto buy feature to buy the best deal automatically

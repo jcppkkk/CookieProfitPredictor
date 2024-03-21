@@ -756,7 +756,7 @@ class PaybackRateMod {
         this.reorderUpgrades(upgrades);
         this.reorderBuildings(buildings);
 
-        if (this.config.autoBuy && all[0].waitingTime === "") {
+        if (this.config.autoBuy && all[0].waitingTime === "" && Game.buyMode == 1) {
             all[0].buy();
         }
     }
