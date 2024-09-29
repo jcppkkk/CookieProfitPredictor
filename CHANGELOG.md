@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2048.13] - 2024.09.30
+- Change Mod Display name as "Cookie Profit Predictor"
+
 ## [2048.12] - 2024.03.22
 - Fix auto buy sell out buildings when sell mode is on
 

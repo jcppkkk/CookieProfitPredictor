@@ -1,30 +1,33 @@
-# Cookie Profit Predictor
+Just like Laplace's demon, but instead of predicting the universe, it’s all about cookies! — The Cookie Profit Predictor mod introduces a suite of strategic tools designed to optimize your resource management and decision-making:
 
-Elevate your gameplay with the Cookie Profit Predictor mod, which introduces a suite of strategic tools designed to optimize your resource management and decision-making:
+# Payback Efficiency Indicator
+This feature shows how quickly you'll earn back your investment in Cookies Per Second (CPS). It's essential for maximizing your gameplay.
 
-## Payback Efficiency Indicator
-Displays the projected Cookies Per Second (CPS) gain from investments, helping you understand how swiftly an item will pay for itself. This is a crucial metric for maximizing gameplay efficiency.
+* **Tier Upgrade Path Planning**: Helps you figure out the benefits of buying multiple buildings to reach the next tier upgrade, improving your payback efficiency.
+    
+* **Rainbow Highlighting for Interim Purchases**: Uses colors to highlight purchases that may not be the best but can speed up your progress toward more valuable long-term investments.
+    
+* **Customizable Color Coding**: Adjust the colors used for efficiency indicators to match your personal style.
+    
 
-- Tier Upgrade Path Planning: Calculates the potential benefits of bulk purchasing buildings to unlock the next tier upgrade, which can often enhance the payback efficiency.
-- Rainbow Highlighting for Optimal Interim Purchases: Uses a spectrum of colors to spotlight interim purchases that, while not the ultimate best deal, can expedite your progress toward the most beneficial long-term investments.
-- Customizable Color Coding: Personalize the color scheme used for payback efficiency indicators, providing a visual representation that aligns with your preferences.
+# Item Timer
+Keep track of how long you need to wait before you can afford a new building or upgrade, making it easier to plan your strategy.
 
-## Item Timer
-Reveals how long you'll need to wait before you can afford a building or upgrade, enabling you to plan your strategy more effectively.
+# Banking Strategy Integration
+Set a target banking cookies (how many seconds based on CPS) to optimize your savings for big payouts like "Lucky!" bonuses.
 
-## Banking Strategy Integration
-Locks a target CPS of your cookies to maximize saving for a "Lucky!" payout or other bonuses.
+# Auto-Sorting by Payback Efficiency
+Automatically organizes buildings and upgrades by their payback efficiency, helping you prioritize the best purchases.
 
-## Auto-Sorting by Payback Efficiency
-Automatically orders buildings and upgrades by their payback efficiency, steering you toward the most advantageous purchases first.
+* **Wizard Tower Exclusion Feature**: Choose not to include Wizard Towers in your efficiency calculations, allowing you to maintain specific spell intervals without disrupting your strategy.
 
-- Wizard Tower Exclusion Feature: Exclude Wizard Towers from payback efficiency calculations, a useful feature for those who wish to maintain specific spell intervals without affecting their strategic planning.
+# Auto-Buy Functionality
+Automatically buys the most efficient item based on your current payback efficiency, streamlining your investment process.
 
-## Auto-Buy Functionality
-Automatically purchases the most efficient item based on the current payback efficiency calculations, streamlining the investment process.
+# Resources
 
-## Resources
-
-- [In-Depth Design Presentation for the Payback Efficiency Mod (Slides)](https://docs.google.com/presentation/d/e/2PACX-1vTzBJulPWJ08URtZp5QLGivJpnkVb3hF7dLUSOcUoWH9Pdtxmj3jmoPwnbL71LTP2moVhr3-GTd0cdA/pub?start=false&loop=false&delayms=60000)
-- Report issues [on the Github](https://github.com/jcppkkk/BestDealHelper/issues)
-- Join us on [Discord](https://discord.gg/VxVdXDdTNW)
+* Check out our [In-Depth Design Presentation for the Payback Efficiency Mod](https://docs.google.com/presentation/d/e/2PACX-1vTzBJulPWJ08URtZp5QLGivJpnkVb3hF7dLUSOcUoWH9Pdtxmj3jmoPwnbL71LTP2moVhr3-GTd0cdA/pub?start=false&amp;loop=false&amp;delayms=60000) for more details.
+    
+* Report any issues [here on GitHub](https://github.com/jcppkkk/BestDealHelper/issues).
+    
+* Join our community on [Discord](https://discord.gg/VxVdXDdTNW).

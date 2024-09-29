@@ -156,9 +156,9 @@ var Game;
 
 LoadScript(App.mods.BestDealHelper.dir + "/chroma.min.js");
 
-class PaybackRateMod {
+class CookieProfitPredictor {
     constructor() {
-        this.displayname = "Payback Rate Mod";
+        this.displayname = "Cookie Profit Predictor";
         this.name = "Best Deal Helper"; // the original name of the mod, keep for save compatibility
         this.version = "2048.07";
         this.isLoaded = false;
@@ -278,15 +278,15 @@ class PaybackRateMod {
     }
     checkUpdateUI() {
         if (this.last_cps !== Game.cookiesPs) {
-            // console.log("PaybackRateMod cookiesPs changed");
+            // console.log("CookieProfitPredictor cookiesPs changed");
             this.last_cps = Game.cookiesPs;
             this.updateUI();
         } else if (JSON.stringify(this.config) !== JSON.stringify(this.last_config)) {
-            // console.log("PaybackRateMod config changed");
+            // console.log("CookieProfitPredictor config changed");
             this.last_config = { ...this.config };
             this.updateUI();
         } else if (!document.querySelector("#productAcc0") || (l("upgrade0") && !l("upgradeAcc0"))) {
-            // console.log("PaybackRateMod UI init");
+            // console.log("CookieProfitPredictor UI init");
             this.updateUI();
         }
     }
@@ -294,7 +294,7 @@ class PaybackRateMod {
     tick() {
         this.tickCount++;
         if (this.tickCount >= 10) {
-            // console.log("PaybackRateMod updateMS triggered");
+            // console.log("CookieProfitPredictor updateMS triggered");
             this.updateUI();
         } else {
             this.checkUpdateUI();
@@ -763,7 +763,7 @@ class PaybackRateMod {
 
 
     getButtonID(/** @type {string} */ config) {
-        return `PaybackRateMod_${config}`;
+        return `CookieProfitPredictor_${config}`;
     }
     /**
      * 
@@ -834,7 +834,7 @@ class PaybackRateMod {
         bankingSecondsInput.type = "number";
         bankingSecondsInput.min = "0";
         bankingSecondsInput.style.width = "6em";
-        bankingSecondsInput.id = "PaybackRateModBankingSecondsInput";
+        bankingSecondsInput.id = "CookieProfitPredictorBankingSecondsInput";
         bankingSecondsInput.value = this.config.bankingSeconds;
         bankingSecondsInput.onchange = bankingSecondsInput.onpaste = bankingSecondsInput.oninput = () => {
             bankingSecondsInput.value = bankingSecondsInput.value.replace(/[^0-9]/g, "");
@@ -858,12 +858,12 @@ class PaybackRateMod {
 
         const updateTimeValue = document.createElement("div");
         updateTimeValue.style.float = "right";
-        updateTimeValue.id = "PaybackRateMod_UpdateMSValue";
+        updateTimeValue.id = "CookieProfitPredictor_UpdateMSValue";
         updateTimeValue.innerHTML = this.config.updateMS + "ms";
 
         const updateTimeSlider = document.createElement("input");
         updateTimeSlider.classList.add("slider");
-        updateTimeSlider.id = "PaybackRateMod_UpdateMSSlider";
+        updateTimeSlider.id = "CookieProfitPredictor_UpdateMSSlider";
         updateTimeSlider.style.clear = "both";
         updateTimeSlider.type = "range";
         updateTimeSlider.min = "500";
@@ -873,7 +873,7 @@ class PaybackRateMod {
         updateTimeSlider.onchange = updateTimeSlider.oninput = () => {
             PlaySound('snd/tick.mp3');
             this.config.updateMS = parseInt(updateTimeSlider.value);
-            l("PaybackRateMod_UpdateMSValue").innerHTML = this.config.updateMS + "ms";
+            l("CookieProfitPredictor_UpdateMSValue").innerHTML = this.config.updateMS + "ms";
         }
 
         const intervalBoxDiv = document.createElement("div");
@@ -897,7 +897,7 @@ class PaybackRateMod {
         colorPickers.forEach((picker) => {
             const colorPicker = document.createElement("input");
             colorPicker.type = "color";
-            colorPicker.id = `PaybackRateMod${picker.config}Picker`;
+            colorPicker.id = `CookieProfitPredictor${picker.config}Picker`;
             colorPicker.value = this.config[picker.config];
             colorPicker.onchange = () => {
                 this.config[picker.config] = colorPicker.value;
@@ -914,7 +914,7 @@ class PaybackRateMod {
     }
 
     /**
-     * Adds an options menu to the game interface for the PaybackRateMod class.
+     * Adds an options menu to the game interface for the CookieProfitPredictor class.
      */
     addOptionsMenu() {
         const body = document.createElement("div");
@@ -935,15 +935,15 @@ class PaybackRateMod {
 };
 
 // Load mod
-const paybackRateMod = new PaybackRateMod();
-if (!paybackRateMod.isLoaded) {
+const cookie_profit_predictor = new CookieProfitPredictor();
+if (!cookie_profit_predictor.isLoaded) {
     if (CCSE && CCSE.isLoaded) {
-        paybackRateMod.register();
+        cookie_profit_predictor.register();
     } else {
         if (!CCSE) {
             CCSE = {};
         }
         if (!CCSE.postLoadHooks) CCSE.postLoadHooks = [];
-        CCSE.postLoadHooks.push(() => paybackRateMod.register());
+        CCSE.postLoadHooks.push(() => cookie_profit_predictor.register());
     }
 }

@@ -1,11 +1,11 @@
 {
- "Name": "Payback Rate Mod",
+ "Name": "Cookie Profit Predictor",
  "ID": "BestDealHelper",
  "Author": "Jethro Yu",
- "Description": "Help you choose best deal! (Best Deal Helper)",
- "ModVersion": 2048.12,
+ "Description": "Just like Laplace's demon, but instead of predicting the universe, it’s all about cookies!",
+ "ModVersion": 2048.13,
  "GameVersion": 2.048,
- "Date": "03/22/2024",
+ "Date": "09/30/2024",
  "Dependencies": [
   "CCSE"
  ],
